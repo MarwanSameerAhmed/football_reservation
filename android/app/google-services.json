@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "765206028408",
+    "project_id": "football-app-a6063",
+    "storage_bucket": "football-app-a6063.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:765206028408:android:83a8b58f3740ac26b2cd8d",
+        "android_client_info": {
+          "package_name": "com.example.football_reservation"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCkMaUUDaftU_rTPDSY0Eb2EkYSbs-oByw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
