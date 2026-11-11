@@ -58,6 +58,8 @@ class MatchesErrorState extends MatchesState {
   final String errorMessage;
   const MatchesErrorState(this.errorMessage);
 
+  String get message => errorMessage;
+
   @override
   List<Object?> get props => [errorMessage];
 }

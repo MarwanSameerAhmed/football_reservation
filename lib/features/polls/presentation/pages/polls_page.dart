@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/enums/user_role.dart';
+import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/presentation/states/app_states.dart';
 import '../../../../core/presentation/widgets/kickoff_circle_button.dart';
 import '../../../../core/presentation/widgets/kickoff_responsive_shell.dart';
@@ -34,64 +35,62 @@ class _PollsPageState extends State<PollsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final authState = context.watch<AuthBloc>().state;
+    final user = authState is Authenticated ? authState.user : null;
+    final isAdmin = user?.role == UserRole.admin;
+    final currentUserId = user?.id ?? 'admin_1';
+
     return KickoffResponsiveShell(
       child: Scaffold(
         appBar: KickoffTopBar(
           title: 'استطلاعات الرأي والتصويت',
+          showBackButton: false,
           actions: [
-            BlocBuilder<AuthBloc, AuthState>(
-              builder: (context, authState) {
-                final isAdmin =
-                    authState is Authenticated &&
-                    authState.user.role == UserRole.admin;
-                if (!isAdmin) return const SizedBox.shrink();
-
-                return KickoffCircleButton(
-                  icon: Icons.add_rounded,
-                  tooltip: 'إنشاء استطلاع جديد',
-                  onPressed: () {
-                    CreatePollSheet.show(
-                      context,
-                      matchId: widget.matchId,
-                      onCreatePoll: (poll) {
-                        context.read<PollsBloc>().add(
-                          CreatePollRequested(poll),
-                        );
-                      },
-                    );
-                  },
-                );
-              },
-            ),
+            if (isAdmin)
+              KickoffCircleButton(
+                icon: Icons.add_rounded,
+                tooltip: 'إنشاء تصويت جديد',
+                size: 40,
+                onPressed: () {
+                  CreatePollSheet.show(
+                    context,
+                    matchId: widget.matchId,
+                    onCreatePoll: (poll) {
+                      context.read<PollsBloc>().add(CreatePollRequested(poll));
+                    },
+                  );
+                },
+              ),
           ],
         ),
+        floatingActionButton: isAdmin
+            ? FloatingActionButton.extended(
+                onPressed: () {
+                  CreatePollSheet.show(
+                    context,
+                    matchId: widget.matchId,
+                    onCreatePoll: (poll) {
+                      context.read<PollsBloc>().add(CreatePollRequested(poll));
+                    },
+                  );
+                },
+                backgroundColor: isDark
+                    ? AppColors.turfGreenNeon
+                    : AppColors.primaryEmerald,
+                foregroundColor:
+                    isDark ? AppColors.canvasDark : Colors.white,
+                icon: const Icon(Icons.poll_rounded),
+                label: const Text(
+                  'طرح استطلاع جديد',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              )
+            : null,
         body: BlocConsumer<PollsBloc, PollsState>(
           listener: (context, state) {
             if (state is PollsLoaded && state.feedbackMessage != null) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  backgroundColor: AppColors.darkSlate,
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  content: Row(
-                    children: [
-                      const Icon(
-                        Icons.check_circle_rounded,
-                        color: AppColors.turfGreen,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          state.feedbackMessage!,
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
+              context.showSuccessToast(state.feedbackMessage!);
             }
           },
           builder: (context, state) {
@@ -116,12 +115,24 @@ class _PollsPageState extends State<PollsPage> {
               return AppEmptyStateWidget(
                 title: 'لا توجد استطلاعات رأي حالياً',
                 message:
-                    'سيتم نشر استطلاعات تحديد المواعيد وجائزة رجل المباراة هنا.',
-                actionLabel: 'تحديث القائمة',
+                    'سيتم نشر استطلاعات المواعيد، واختيار الملاعب، وجائزة رجل المباراة هنا.',
+                actionLabel: isAdmin ? 'إنشاء استطلاع جديد' : 'تحديث القائمة',
                 onAction: () {
-                  context.read<PollsBloc>().add(
-                    LoadPollsRequested(matchId: widget.matchId),
-                  );
+                  if (isAdmin) {
+                    CreatePollSheet.show(
+                      context,
+                      matchId: widget.matchId,
+                      onCreatePoll: (poll) {
+                        context.read<PollsBloc>().add(
+                          CreatePollRequested(poll),
+                        );
+                      },
+                    );
+                  } else {
+                    context.read<PollsBloc>().add(
+                      LoadPollsRequested(matchId: widget.matchId),
+                    );
+                  }
                 },
               );
             }
@@ -142,85 +153,77 @@ class _PollsPageState extends State<PollsPage> {
                   .toList();
             }
 
-            return BlocBuilder<AuthBloc, AuthState>(
-              builder: (context, authState) {
-                final currentUserId = authState is Authenticated
-                    ? authState.user.id
-                    : 'admin_1';
-                final isAdmin =
-                    authState is Authenticated &&
-                    authState.user.role == UserRole.admin;
+            final activeCount = pollsState.polls
+                .where((p) => p.isActive)
+                .length;
 
-                return Column(
-                  children: [
-                    // Filter Chips Bar
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16.0,
-                        vertical: 8.0,
+            return Column(
+              children: [
+                // Quick Category Filter Bar
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 8.0,
+                  ),
+                  child: Row(
+                    children: [
+                      _buildFilterChip(
+                        0,
+                        'الكل (${pollsState.polls.length})',
+                        isDark,
                       ),
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            _buildFilterChip(
-                              'الكل (${pollsState.polls.length})',
-                              0,
-                            ),
-                            const SizedBox(width: 8),
-                            _buildFilterChip(
-                              'المتاحة للتصويت (${pollsState.polls.where((p) => p.isActive).length})',
-                              1,
-                            ),
-                            const SizedBox(width: 8),
-                            _buildFilterChip('المنتهية', 2),
-                          ],
-                        ),
+                      const SizedBox(width: 8),
+                      _buildFilterChip(
+                        1,
+                        'المتاحة للتصويت ($activeCount)',
+                        isDark,
                       ),
-                    ),
+                      const SizedBox(width: 8),
+                      _buildFilterChip(2, 'المنتهية والمحسومة', isDark),
+                    ],
+                  ),
+                ),
 
-                    // Polls Feed
-                    Expanded(
-                      child: displayedPolls.isEmpty
-                          ? const AppEmptyStateWidget(
-                              title: 'لا توجد نتائج مطابقة',
-                              message: 'لا توجد استطلاعات في هذا القسم حالياً.',
-                            )
-                          : ListView.separated(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
-                              itemCount: displayedPolls.length,
-                              separatorBuilder: (_, __) =>
-                                  const SizedBox(height: 16),
-                              itemBuilder: (context, index) {
-                                final poll = displayedPolls[index];
-                                return PollCard(
-                                  poll: poll,
-                                  currentUserId: currentUserId,
-                                  isAdmin: isAdmin,
-                                  onVoteOption: (option) {
-                                    context.read<PollsBloc>().add(
-                                      CastVoteRequested(
-                                        pollId: poll.id,
-                                        optionId: option.id,
-                                        userId: currentUserId,
-                                      ),
-                                    );
-                                  },
-                                  onClosePoll: () {
-                                    context.read<PollsBloc>().add(
-                                      ClosePollRequested(poll.id),
-                                    );
-                                  },
+                // Polls Feed
+                Expanded(
+                  child: displayedPolls.isEmpty
+                      ? const AppEmptyStateWidget(
+                          title: 'لا توجد نتائج مطابقة',
+                          message: 'لا توجد استطلاعات في هذا القسم حالياً.',
+                        )
+                      : ListView.separated(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          itemCount: displayedPolls.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 14),
+                          itemBuilder: (context, index) {
+                            final poll = displayedPolls[index];
+                            return PollCard(
+                              poll: poll,
+                              currentUserId: currentUserId,
+                              isAdmin: isAdmin,
+                              onVoteOption: (option) {
+                                context.read<PollsBloc>().add(
+                                  CastVoteRequested(
+                                    pollId: poll.id,
+                                    optionId: option.id,
+                                    userId: currentUserId,
+                                  ),
                                 );
                               },
-                            ),
-                    ),
-                  ],
-                );
-              },
+                              onClosePoll: () {
+                                context.read<PollsBloc>().add(
+                                  ClosePollRequested(poll.id),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                ),
+              ],
             );
           },
         ),
@@ -228,14 +231,42 @@ class _PollsPageState extends State<PollsPage> {
     );
   }
 
-  Widget _buildFilterChip(String label, int index) {
+  Widget _buildFilterChip(int index, String label, bool isDark) {
     final isSelected = _selectedFilterIndex == index;
-    return ChoiceChip(
-      label: Text(label),
-      selected: isSelected,
-      onSelected: (selected) {
-        if (selected) setState(() => _selectedFilterIndex = index);
-      },
+    final cs = Theme.of(context).colorScheme;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedFilterIndex = index),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? (isDark ? AppColors.turfGreenNeon : AppColors.primaryEmerald)
+                : cs.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isSelected
+                  ? Colors.transparent
+                  : cs.outlineVariant.withValues(alpha: 0.7),
+            ),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+              color: isSelected
+                  ? (isDark ? AppColors.canvasDark : Colors.white)
+                  : cs.onSurfaceVariant,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ),
     );
   }
 }

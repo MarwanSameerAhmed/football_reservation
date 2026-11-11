@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../app/theme/app_colors.dart';
-import '../../../../core/constants/app_constants.dart';
+import '../../../../core/enums/poll_type.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/presentation/widgets/app_text_field.dart';
 import '../../../../core/presentation/widgets/kickoff_action_button.dart';
+import '../../../../core/presentation/widgets/kickoff_bottom_sheet_shell.dart';
+import '../../../polls/domain/entities/poll_entity.dart';
+import '../../../polls/domain/entities/poll_option_entity.dart';
+import '../../../polls/presentation/bloc/polls_bloc.dart';
+import '../../../polls/presentation/bloc/polls_event.dart';
 import '../../domain/entities/goal_event_entity.dart';
 import '../../domain/entities/match_entity.dart';
 import '../../domain/entities/match_result_entity.dart';
@@ -23,12 +29,16 @@ class RecordResultSheet extends StatefulWidget {
     required MatchEntity match,
     required ValueChanged<MatchResultEntity> onSaveResult,
   }) {
+    final pollsBloc = context.read<PollsBloc>();
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
-      builder: (_) =>
-          RecordResultSheet(match: match, onSaveResult: onSaveResult),
+      builder: (_) => BlocProvider.value(
+        value: pollsBloc,
+        child: RecordResultSheet(match: match, onSaveResult: onSaveResult),
+      ),
     );
   }
 
@@ -39,8 +49,10 @@ class RecordResultSheet extends StatefulWidget {
 class _RecordResultSheetState extends State<RecordResultSheet> {
   int _scoreA = 0;
   int _scoreB = 0;
+  int _scoreC = 0;
   final String _teamAName = 'الفريق الأول (الأخضر)';
   final String _teamBName = 'الفريق الثاني (الأبيض)';
+  final String _teamCName = 'الفريق الثالث (الأسود)';
   String? _selectedMotmPlayerName;
   final _notesController = TextEditingController();
 
@@ -58,6 +70,7 @@ class _RecordResultSheetState extends State<RecordResultSheet> {
     if (existing != null) {
       _scoreA = existing.teamAScore;
       _scoreB = existing.teamBScore;
+      _scoreC = existing.teamCScore ?? 0;
       _selectedMotmPlayerName = existing.manOfTheMatchName;
       _notesController.text = existing.notes ?? '';
       _goals.addAll(existing.goals);
@@ -90,8 +103,10 @@ class _RecordResultSheetState extends State<RecordResultSheet> {
       _goals.add(newGoal);
       if (_goalTeam == _teamAName) {
         _scoreA++;
-      } else {
+      } else if (_goalTeam == _teamBName) {
         _scoreB++;
+      } else {
+        _scoreC++;
       }
       _scorerController.clear();
       _assistController.clear();
@@ -104,8 +119,10 @@ class _RecordResultSheetState extends State<RecordResultSheet> {
       matchId: widget.match.id,
       teamAScore: _scoreA,
       teamBScore: _scoreB,
+      teamCScore: _scoreC,
       teamAName: _teamAName,
       teamBName: _teamBName,
+      teamCName: _teamCName,
       goals: _goals,
       manOfTheMatchName: _selectedMotmPlayerName,
       isLocked: true,
@@ -116,207 +133,254 @@ class _RecordResultSheetState extends State<RecordResultSheet> {
     );
 
     widget.onSaveResult(result);
+
+    // Automatically update and unlock the MOTM poll with all confirmed match players
+    if (widget.match.confirmedPlayers.isNotEmpty) {
+      final options = widget.match.confirmedPlayers.map((p) {
+        return PollOptionEntity(
+          id: p.playerId,
+          text: p.playerName,
+          subtitle: p.playerPosition.labelArabic,
+          voterUserIds: const [],
+        );
+      }).toList();
+
+      final motmPoll = PollEntity(
+        id: 'poll_motm_${widget.match.id}',
+        matchId: widget.match.id,
+        matchDetails: '${widget.match.title} • ${widget.match.pitchName}',
+        title: 'رجل المباراة 🌟 (${widget.match.title})',
+        description: 'اختر اللاعب الأفضل في اللقاء من بين جميع المشاركين',
+        type: PollType.manOfTheMatch,
+        options: options,
+        creatorId: 'admin_1',
+        allowMultipleVotes: false,
+        closesAt: DateTime.now().add(const Duration(days: 2)),
+        isClosed: false,
+        isLockedUntilMatchEnds: false,
+        createdAt: DateTime.now(),
+      );
+      context.read<PollsBloc>().add(CreatePollRequested(motmPoll));
+    }
+
     Navigator.of(context).pop();
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = context.isDarkMode;
+    final cs = context.colorScheme;
+    final accent = isDark ? AppColors.turfGreenNeon : AppColors.primaryEmerald;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(AppConstants.radiusLarge),
-        ),
+    return KickoffBottomSheetShell(
+      title: 'تسجيل وتثبيت نتيجة المباراة الرسمية',
+      subtitle:
+          'نظام 3 فرق • رصد الأهداف وصناع اللعب وتفعيل استطلاع رجل المباراة',
+      icon: Icons.emoji_events_rounded,
+      heightFactor: 0.88,
+      bottomAction: KickoffActionButton(
+        label: 'اعتماد وتثبيت النتيجة رسمياً 🏆',
+        onPressed: _submit,
       ),
-      padding: EdgeInsets.only(
-        top: 16.0,
-        left: context.horizontalPadding,
-        right: context.horizontalPadding,
-        bottom: context.viewInsets.bottom + 24.0,
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Handle bar
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.borderDark : AppColors.borderLight,
-                  borderRadius: BorderRadius.circular(2),
-                ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Purpose Explanation Banner
+          Container(
+            padding: const EdgeInsets.all(13),
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: isDark ? 0.12 : 0.08),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: accent.withValues(alpha: 0.28),
               ),
             ),
-            const SizedBox(height: 16),
-
-            Text(
-              'تسجيل وتثبيت نتيجة المباراة الرسمية',
-              style: context.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Score Steppers
-            Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Team A
-                Expanded(
-                  child: _buildTeamScoreControl(
-                    name: _teamAName,
-                    color: AppColors.turfGreen,
-                    score: _scoreA,
-                    onIncrement: () => setState(() => _scoreA++),
-                    onDecrement: () => setState(() {
-                      if (_scoreA > 0) _scoreA--;
-                    }),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10.0),
-                  child: Text(
-                    ':',
-                    style: context.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
+                Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline_rounded,
+                      size: 17,
+                      color: accent,
                     ),
-                  ),
-                ),
-                // Team B
-                Expanded(
-                  child: _buildTeamScoreControl(
-                    name: _teamBName,
-                    color: isDark
-                        ? AppColors.textSecondaryLight
-                        : AppColors.darkSlate,
-                    score: _scoreB,
-                    onIncrement: () => setState(() => _scoreB++),
-                    onDecrement: () => setState(() {
-                      if (_scoreB > 0) _scoreB--;
-                    }),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-
-            // Add Goal Section
-            Text(
-              'تسجيل الأهداف وصناعها (اختياري)',
-              style: context.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-
-            Row(
-              children: [
-                Expanded(
-                  child: AppTextField(
-                    hint: 'اسم الهداف',
-                    controller: _scorerController,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: AppTextField(
-                    hint: 'صانع الهدف',
-                    controller: _assistController,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            Row(
-              children: [
-                // Team Choice
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    value: _goalTeam,
-                    decoration: InputDecoration(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                    const SizedBox(width: 6),
+                    Text(
+                      'ما فائدة هذه الصفحة وكيف تعمل؟',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w800,
+                        color: accent,
                       ),
                     ),
-                    items: [_teamAName, _teamBName].map((t) {
-                      return DropdownMenuItem(
-                        value: t,
-                        child: Text(t, style: context.textTheme.bodySmall),
-                      );
-                    }).toList(),
-                    onChanged: (v) {
-                      if (v != null) setState(() => _goalTeam = v);
-                    },
-                  ),
+                  ],
                 ),
-                const SizedBox(width: 10),
-                IconButton.filled(
-                  style: IconButton.styleFrom(
-                    backgroundColor: AppColors.turfGreen,
-                    foregroundColor: AppColors.darkSlate,
+                const SizedBox(height: 5),
+                Text(
+                  '١. اعتماد أهداف ونتائج الفرق الثلاثة (الأخضر، الأبيض، الأسود) رسمياً.\n'
+                  '٢. رصد أهداف وصناع اللعب لتحديث صدارة الهدافين وصناع اللعب تلقائياً.\n'
+                  '٣. فك قفل استطلاع (رجل المباراة) فور الحفظ لإتاحة التصويت لجميع المشاركين.',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    height: 1.5,
+                    color: cs.onSurfaceVariant,
                   ),
-                  onPressed: _addGoal,
-                  icon: const Icon(Icons.add_rounded),
                 ),
               ],
             ),
+          ),
+          const SizedBox(height: 16),
 
-            if (_goals.isNotEmpty) ...[
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: _goals.map((g) {
-                  return Chip(
-                    label: Text('${g.scorerName} ⚽ (${g.teamName})'),
-                    onDeleted: () {
-                      setState(() {
-                        _goals.remove(g);
-                        if (g.teamName == _teamAName && _scoreA > 0) _scoreA--;
-                        if (g.teamName == _teamBName && _scoreB > 0) _scoreB--;
-                      });
-                    },
-                  );
-                }).toList(),
+          // 3-Team Score Steppers
+          Row(
+            children: [
+              // Team A (Green)
+              Expanded(
+                child: _buildTeamScoreControl(
+                  name: 'الأخضر',
+                  color: accent,
+                  score: _scoreA,
+                  onIncrement: () => setState(() => _scoreA++),
+                  onDecrement: () => setState(() {
+                    if (_scoreA > 0) _scoreA--;
+                  }),
+                ),
+              ),
+              const SizedBox(width: 6),
+              // Team B (White)
+              Expanded(
+                child: _buildTeamScoreControl(
+                  name: 'الأبيض',
+                  color: cs.onSurfaceVariant,
+                  score: _scoreB,
+                  onIncrement: () => setState(() => _scoreB++),
+                  onDecrement: () => setState(() {
+                    if (_scoreB > 0) _scoreB--;
+                  }),
+                ),
+              ),
+              const SizedBox(width: 6),
+              // Team C (Black)
+              Expanded(
+                child: _buildTeamScoreControl(
+                  name: 'الأسود',
+                  color: isDark ? Colors.white : Colors.black87,
+                  score: _scoreC,
+                  onIncrement: () => setState(() => _scoreC++),
+                  onDecrement: () => setState(() {
+                    if (_scoreC > 0) _scoreC--;
+                  }),
+                ),
               ),
             ],
+          ),
+          const SizedBox(height: 20),
 
-            const SizedBox(height: 16),
-
-            // Man of the Match (MOTM)
-            AppTextField(
-              label: 'رجل المباراة (Man of the Match ⭐)',
-              hint: 'اسم اللاعب الأبرز...',
-              controller: TextEditingController(text: _selectedMotmPlayerName),
-              onChanged: (v) => _selectedMotmPlayerName = v.trim(),
+          // Add Goal Section
+          Text(
+            'تسجيل الأهداف وصناعها (اختياري)',
+            style: context.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.bold,
             ),
-            const SizedBox(height: 12),
+          ),
+          const SizedBox(height: 8),
 
-            // Notes
-            AppTextField(
-              label: 'ملاحظات المباراة والتقرير الفني',
-              hint: 'أجواء اللقاء، قرارات تحكيمية، ملخص الأداء...',
-              controller: _notesController,
-              maxLines: 2,
-            ),
-            const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: AppTextField(
+                  hint: 'اسم الهداف',
+                  controller: _scorerController,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: AppTextField(
+                  hint: 'صانع الهدف',
+                  controller: _assistController,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
 
-            // Submit Button
-            KickoffActionButton(
-              label: 'اعتماد وتثبيت النتيجة رسمياً 🏆',
-              onPressed: _submit,
+          Row(
+            children: [
+              // Team Choice (3 Teams)
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  value: _goalTeam,
+                  decoration: InputDecoration(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  items: [_teamAName, _teamBName, _teamCName].map((t) {
+                    return DropdownMenuItem(
+                      value: t,
+                      child: Text(t, style: context.textTheme.bodySmall),
+                    );
+                  }).toList(),
+                  onChanged: (v) {
+                    if (v != null) setState(() => _goalTeam = v);
+                  },
+                ),
+              ),
+              const SizedBox(width: 10),
+              IconButton.filled(
+                style: IconButton.styleFrom(
+                  backgroundColor: AppColors.turfGreen,
+                  foregroundColor: AppColors.darkSlate,
+                ),
+                onPressed: _addGoal,
+                icon: const Icon(Icons.add_rounded),
+              ),
+            ],
+          ),
+
+          if (_goals.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: _goals.map((g) {
+                return Chip(
+                  label: Text('${g.scorerName} ⚽ (${g.teamName})'),
+                  onDeleted: () {
+                    setState(() {
+                      _goals.remove(g);
+                      if (g.teamName == _teamAName && _scoreA > 0) _scoreA--;
+                      if (g.teamName == _teamBName && _scoreB > 0) _scoreB--;
+                      if (g.teamName == _teamCName && _scoreC > 0) _scoreC--;
+                    });
+                  },
+                );
+              }).toList(),
             ),
-            const SizedBox(height: 12),
           ],
-        ),
+
+          const SizedBox(height: 16),
+
+          // Man of the Match (MOTM)
+          AppTextField(
+            label: 'رجل المباراة (Man of the Match ⭐)',
+            hint: 'اسم اللاعب الأبرز...',
+            controller: TextEditingController(text: _selectedMotmPlayerName),
+            onChanged: (v) => _selectedMotmPlayerName = v.trim(),
+          ),
+          const SizedBox(height: 12),
+
+          // Notes
+          AppTextField(
+            label: 'ملاحظات المباراة والتقرير الفني',
+            hint: 'أجواء اللقاء، قرارات تحكيمية، ملخص الأداء...',
+            controller: _notesController,
+            maxLines: 2,
+          ),
+          const SizedBox(height: 12),
+        ],
       ),
     );
   }
@@ -361,21 +425,39 @@ class _RecordResultSheetState extends State<RecordResultSheet> {
           ),
           const SizedBox(height: 10),
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              IconButton(
-                icon: const Icon(Icons.remove_circle_outline_rounded),
-                onPressed: onDecrement,
+              InkWell(
+                onTap: onDecrement,
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: Icon(
+                    Icons.remove_circle_outline_rounded,
+                    size: 22,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondaryLight,
+                  ),
+                ),
               ),
               Text(
                 '$score',
-                style: context.textTheme.headlineMedium?.copyWith(
+                style: context.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              IconButton(
-                icon: const Icon(Icons.add_circle_outline_rounded),
-                onPressed: onIncrement,
+              InkWell(
+                onTap: onIncrement,
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: Icon(
+                    Icons.add_circle_outline_rounded,
+                    size: 22,
+                    color: color,
+                  ),
+                ),
               ),
             ],
           ),

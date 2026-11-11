@@ -21,7 +21,7 @@ void main() {
     // Verify HomePage renders
     expect(find.byType(KickoffResponsiveShell), findsWidgets);
     expect(find.text('مروان سمير'), findsOneWidget);
-    expect(find.byType(KickoffBadge), findsWidgets);
+    expect(find.textContaining('مسؤول المجموعة'), findsOneWidget);
     expect(find.byType(KickoffSearchField), findsOneWidget);
     expect(find.byType(KickoffHeroCard), findsOneWidget);
   });

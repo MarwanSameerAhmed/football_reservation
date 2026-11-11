@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../app/theme/app_colors.dart';
 import '../../../../core/enums/user_role.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/presentation/widgets/kickoff_widgets.dart';
@@ -61,30 +60,7 @@ class _SignUpPageState extends State<SignUpPage> {
             if (state is Authenticated) {
               context.go('/');
             } else if (state is AuthFailureState) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  backgroundColor: AppColors.darkSlate,
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  content: Row(
-                    children: [
-                      const Icon(
-                        Icons.error_outline_rounded,
-                        color: AppColors.redText,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          state.errorMessage,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
+              context.showErrorToast(state.errorMessage);
             }
           },
           builder: (context, state) {

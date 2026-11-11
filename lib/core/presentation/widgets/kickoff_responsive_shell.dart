@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../constants/app_constants.dart';
 import '../../helpers/responsive_helper.dart';
 
 /// Ensures mobile-first layout integrity on all screens.
-/// On desktop or wide mobile-web viewports, it restricts width to [AppConstants.maxContentWidth]
-/// and centers the content gracefully with subtle containment. On native mobile screens,
-/// it natively fills the viewport.
+///
+/// Features:
+/// 1. Status bar matching background canvas (#F6F7F5 / #0A0F0D) with dynamic icon brightness.
+/// 2. Tap-anywhere to dismiss keyboard across the entire application.
+/// 3. Clamped text scaling preventing UI overflow breaks.
+/// 4. Graceful centering on wide desktop/web viewports.
 class KickoffResponsiveShell extends StatelessWidget {
   final Widget child;
   final double maxWidth;
@@ -23,44 +27,62 @@ class KickoffResponsiveShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final clampedScaler = ResponsiveHelper.clampedTextScaler(context);
+    final effectiveBgColor = backgroundColor ?? theme.scaffoldBackgroundColor;
 
-    return MediaQuery(
-      data: MediaQuery.of(context).copyWith(textScaler: clampedScaler),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final isWideScreen = constraints.maxWidth > maxWidth;
+    final systemOverlay = SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+      statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+      systemNavigationBarColor: effectiveBgColor,
+      systemNavigationBarIconBrightness: isDark
+          ? Brightness.light
+          : Brightness.dark,
+    );
 
-          Widget content = Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: maxWidth),
-              child: child,
-            ),
-          );
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: systemOverlay,
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+        child: MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaler: clampedScaler),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isWideScreen = constraints.maxWidth > maxWidth;
 
-          if (isWideScreen) {
-            // Elegant background framing for mobile web viewports
-            return Container(
-              color: theme.scaffoldBackgroundColor,
-              alignment: Alignment.center,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: theme.scaffoldBackgroundColor,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 24,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+              Widget content = Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: maxWidth),
+                  child: child,
                 ),
-                child: content,
-              ),
-            );
-          }
+              );
 
-          return content;
-        },
+              if (isWideScreen) {
+                return Container(
+                  color: effectiveBgColor,
+                  alignment: Alignment.center,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: effectiveBgColor,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.08),
+                          blurRadius: 24,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: content,
+                  ),
+                );
+              }
+
+              return content;
+            },
+          ),
+        ),
       ),
     );
   }

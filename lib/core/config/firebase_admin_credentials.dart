@@ -48,4 +48,3 @@ abstract final class FirebaseAdminCredentials {
     'universe_domain': 'googleapis.com',
   };
 }
-

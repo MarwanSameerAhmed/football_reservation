@@ -112,7 +112,11 @@ Future<void> setupLocator({bool useFirebase = false}) async {
   sl.registerLazySingleton(() => UpdatePlayerSkillsUseCase(sl()));
 
   sl.registerFactory(
-    () => PlayersBloc(getPlayersUseCase: sl(), updatePlayerSkillsUseCase: sl()),
+    () => PlayersBloc(
+      getPlayersUseCase: sl(),
+      updatePlayerSkillsUseCase: sl(),
+      createPlayerUseCase: sl(),
+    ),
   );
 
   // ── Matches & Registrations Feature ───────────────────────────────────────
@@ -138,6 +142,7 @@ Future<void> setupLocator({bool useFirebase = false}) async {
       registerPlayerToMatchUseCase: sl(),
       cancelMatchRegistrationUseCase: sl(),
       recordMatchResultUseCase: sl(),
+      createMatchUseCase: sl(),
       notificationSenderService: sl(),
     ),
   );

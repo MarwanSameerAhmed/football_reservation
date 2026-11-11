@@ -221,8 +221,8 @@ class MockPollRemoteDataSource implements PollRemoteDataSource {
     // 2. MOTM Poll
     final motmPoll = PollModel(
       id: 'poll_motm_1',
-      matchId: 'match_1',
-      title: 'تصويت رجل المباراة (MOTM) - الكلاسيكو الأخير ⭐',
+      matchId: 'm1',
+      title: 'تصويت رجل المباراة 🌟',
       description: 'صوت لأفضل لاعب قدم أداءً حاسماً في مباراة الأسبوع.',
       type: PollType.manOfTheMatch,
       creatorId: 'admin_1',
@@ -233,7 +233,7 @@ class MockPollRemoteDataSource implements PollRemoteDataSource {
       options: const [
         PollOptionModel(
           id: 'opt_motm_1',
-          text: 'كابتن سفيان',
+          text: 'سفيان العلي',
           subtitle: 'مهاجم • هاتريك (3 أهداف) وصناعة هدف حاسم',
           voterUserIds: [
             'user_1',
@@ -270,8 +270,43 @@ class MockPollRemoteDataSource implements PollRemoteDataSource {
       ],
     );
 
+    // 3. General Group Poll
+    final generalPoll = PollModel(
+      id: 'poll_general_1',
+      title: 'مقترح بطولة دوري المجموعات المصغرة 🏆',
+      description:
+          'ما هو رأيك في فكرة تقسيمنا لـ 4 فرق متنافسة بنظام النقاط شهرياً؟',
+      type: PollType.general,
+      creatorId: 'admin_1',
+      allowMultipleVotes: false,
+      closesAt: DateTime.now().add(const Duration(days: 4)),
+      isClosed: false,
+      createdAt: DateTime.now().subtract(const Duration(hours: 1)),
+      options: const [
+        PollOptionModel(
+          id: 'opt_gen_1',
+          text: 'موافق وبقوة، فكرة حماسية وتنافسية 👍',
+          subtitle: 'تزيد من جدية المباريات وإثارتها',
+          voterUserIds: ['user_1', 'user_2', 'user_4', 'user_8', 'admin_1'],
+        ),
+        PollOptionModel(
+          id: 'opt_gen_2',
+          text: 'أفضل استمرار النظام الحالي (مباريات ودية حرة) ⚽',
+          subtitle: 'أخف عبئاً على الحضور والتنسيق',
+          voterUserIds: ['user_3', 'user_5'],
+        ),
+        PollOptionModel(
+          id: 'opt_gen_3',
+          text: 'أقترح إقامة بطولة في العطلات الرسمية فقط 🗓️',
+          subtitle: 'مناسبة لجميع الأوقات',
+          voterUserIds: ['user_6'],
+        ),
+      ],
+    );
+
     _polls[schedulingPoll.id] = schedulingPoll;
     _polls[motmPoll.id] = motmPoll;
+    _polls[generalPoll.id] = generalPoll;
   }
 
   @override

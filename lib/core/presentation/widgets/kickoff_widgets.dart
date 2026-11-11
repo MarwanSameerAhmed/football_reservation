@@ -1,6 +1,7 @@
 export 'app_password_field.dart';
 export 'app_text_field.dart';
 export 'kickoff_action_button.dart';
+export 'kickoff_avatar.dart';
 export 'kickoff_badge.dart';
 export 'kickoff_bottom_nav_bar.dart';
 export 'kickoff_card.dart';
@@ -10,4 +11,5 @@ export 'kickoff_hero_card.dart';
 export 'kickoff_list_card.dart';
 export 'kickoff_responsive_shell.dart';
 export 'kickoff_search_field.dart';
+export 'kickoff_toast.dart';
 export 'kickoff_top_bar.dart';

@@ -354,6 +354,79 @@ void main() {
         expect(swapped.teams[2].players.length, equals(6));
       },
     );
+
+    test('Generates randomized goalkeeper rotation order for each team', () {
+      final lineup = TeamBalancer.balance(
+        players: mock18Players,
+        matchId: 'match_18',
+      );
+
+      for (final team in lineup.teams) {
+        // Every player in team must be in goalkeeperRotation
+        expect(team.goalkeeperRotation.length, equals(team.players.length));
+        final teamPlayerIds = team.players.map((p) => p.id).toSet();
+        final rotationSet = team.goalkeeperRotation.toSet();
+        expect(rotationSet, equals(teamPlayerIds));
+
+        // Helper methods
+        final firstPlayerId = team.goalkeeperRotation.first;
+        expect(team.getGoalkeeperOrder(firstPlayerId), equals(1));
+        expect(team.goalkeeperRotationPlayers.length, equals(team.players.length));
+      }
+    });
+
+    test('Thoughtfully selects team captain based on matches, MOTM & skill metrics', () {
+      final lineup = TeamBalancer.balance(
+        players: mock18Players,
+        matchId: 'match_18',
+      );
+
+      for (final team in lineup.teams) {
+        expect(team.captainPlayerId, isNotNull);
+        expect(team.captain, isNotNull);
+        expect(team.isCaptain(team.captainPlayerId!), isTrue);
+
+        // Verify captain has highest leadership score in the squad
+        final captainPlayer = team.captain!;
+        final captainScore = (captainPlayer.matchesPlayed * 2.5) +
+            (captainPlayer.motmCount * 6.0) +
+            (captainPlayer.skills.overallScore * 0.15) +
+            (captainPlayer.assists * 1.0) +
+            (captainPlayer.goals * 0.5);
+
+        for (final p in team.players) {
+          final pScore = (p.matchesPlayed * 2.5) +
+              (p.motmCount * 6.0) +
+              (p.skills.overallScore * 0.15) +
+              (p.assists * 1.0) +
+              (p.goals * 0.5);
+          expect(captainScore, greaterThanOrEqualTo(pScore));
+        }
+      }
+    });
+
+    test('Swap retains goalkeeper rotation turn slot seamlessly', () {
+      final lineup = TeamBalancer.balance(
+        players: mock18Players,
+        matchId: 'match_18',
+      );
+
+      final p1 = lineup.teams[0].players.first;
+      final p3 = lineup.teams[2].players.first;
+      final initialSlotInTeam1 = lineup.teams[0].getGoalkeeperOrder(p1.id);
+      final initialSlotInTeam3 = lineup.teams[2].getGoalkeeperOrder(p3.id);
+
+      final swapped = TeamBalancer.swap(
+        lineup: lineup,
+        playerAId: p1.id,
+        playerBId: p3.id,
+      );
+
+      // p3 takes p1's exact slot in Team 1
+      expect(swapped.teams[0].getGoalkeeperOrder(p3.id), equals(initialSlotInTeam1));
+      // p1 takes p3's exact slot in Team 3
+      expect(swapped.teams[2].getGoalkeeperOrder(p1.id), equals(initialSlotInTeam3));
+    });
   });
 
   group('TeamGeneratorRepository & Bloc Tests', () {

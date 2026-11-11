@@ -94,7 +94,14 @@ void main() {
         await tester.tap(notifBell);
         await tester.pumpAndSettle();
 
-        expect(tester.takeException(), isNull);
+        final err = tester.takeException();
+        if (err is FlutterError) {
+          for (final d in err.diagnostics) {
+            // ignore: avoid_print
+            print('DIAG: ${d.toStringDeep()}');
+          }
+        }
+        expect(err, isNull);
       },
     );
 
@@ -109,10 +116,8 @@ void main() {
         await tester.pumpWidget(const KickoffApp());
         await tester.pumpAndSettle();
 
-        // Tap polls item in bottom nav
-        final pollsNav = find.text('التصويت');
-        expect(pollsNav, findsOneWidget);
-        await tester.tap(pollsNav);
+        // Navigate to polls page
+        AppRouter.router.push('/polls');
         await tester.pumpAndSettle();
 
         final err = tester.takeException();
@@ -140,12 +145,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(KickoffResponsiveShell), findsWidgets);
-        final statsErr = tester.takeException();
-        if (statsErr != null) {
-          // ignore: avoid_print
-          print('STATS DIAGNOSTICS: $statsErr');
-        }
-        expect(statsErr, isNull);
+        expect(tester.takeException(), isNull);
       },
     );
 
@@ -242,7 +242,14 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(KickoffResponsiveShell), findsWidgets);
-        expect(tester.takeException(), isNull);
+        final err = tester.takeException();
+        if (err is FlutterError) {
+          for (final d in err.diagnostics) {
+            // ignore: avoid_print
+            print('DIAG: ${d.toStringDeep()}');
+          }
+        }
+        expect(err, isNull);
       },
     );
 
@@ -288,9 +295,7 @@ void main() {
       final error = tester.takeException();
       if (error != null) {
         // ignore: avoid_print
-        print(
-          'DIAGNOSTICS:\n${(error as FlutterError).diagnostics.map((d) => d.toString()).join('\n')}',
-        );
+        print('DIAGNOSTICS: $error');
       }
       expect(error, isNull);
     });

@@ -34,10 +34,10 @@ class BalanceIndicatorBar extends StatelessWidget {
       teamNames = teams!.map((t) => t.name).toList();
       teamScores = teams!.map((t) => t.totalScore.toDouble()).toList();
       teamColors = [
-        AppColors.turfGreen,
-        isDark ? Colors.lightBlueAccent : const Color(0xFF0284C7),
-        isDark ? AppColors.textSecondaryLight : AppColors.darkSlate,
-        Colors.amber,
+        isDark ? AppColors.turfGreenNeon : AppColors.primaryEmerald,
+        isDark ? Colors.lightBlueAccent : AppColors.blueAccent,
+        AppColors.indigoAccent,
+        AppColors.amberText,
       ];
     } else {
       final sA = scoreA ?? 0.0;

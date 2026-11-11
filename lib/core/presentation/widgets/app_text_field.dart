@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../app/theme/app_colors.dart';
-import '../../constants/app_constants.dart';
 import '../../extensions/context_extensions.dart';
 
-/// Reusable input field matching the design tokens of Kickoff.
+/// Reusable Executive Squircle input field matching M3 Surface Hierarchy.
 class AppTextField extends StatelessWidget {
   final TextEditingController? controller;
   final String? label;
@@ -37,6 +36,7 @@ class AppTextField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = context.isDarkMode;
+    final cs = context.colorScheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -49,9 +49,7 @@ class AppTextField extends StatelessWidget {
               label!,
               style: context.textTheme.labelMedium?.copyWith(
                 fontWeight: FontWeight.w700,
-                color: isDark
-                    ? AppColors.textPrimaryDark
-                    : AppColors.textPrimaryLight,
+                color: cs.onSurface,
               ),
             ),
           ),
@@ -67,66 +65,54 @@ class AppTextField extends StatelessWidget {
           readOnly: readOnly,
           onTap: onTap,
           style: context.textTheme.bodyMedium?.copyWith(
-            color: isDark
-                ? AppColors.textPrimaryDark
-                : AppColors.textPrimaryLight,
+            color: cs.onSurface,
             fontWeight: FontWeight.w600,
           ),
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: context.textTheme.bodyMedium?.copyWith(
-              color: isDark ? AppColors.textHintDark : AppColors.textHintLight,
+              color: cs.outline,
             ),
             prefixIcon: prefixIcon != null
                 ? Icon(
                     prefixIcon,
-                    color: isDark
-                        ? AppColors.textSecondaryDark
-                        : AppColors.textSecondaryLight,
+                    color: cs.onSurfaceVariant,
                     size: 20,
                   )
                 : null,
             suffixIcon: suffixIcon,
             filled: true,
-            fillColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+            fillColor: isDark
+                ? AppColors.surfaceDarkElevated
+                : AppColors.surfaceElevatedLight,
             contentPadding: const EdgeInsets.symmetric(
-              horizontal: 20,
+              horizontal: 18,
               vertical: 15,
             ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppConstants.radiusCircular),
-              borderSide: BorderSide(
-                color: isDark ? AppColors.borderDark : AppColors.borderLight,
-                width: 1.0,
-              ),
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: cs.outlineVariant, width: 1.0),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppConstants.radiusCircular),
-              borderSide: BorderSide(
-                color: isDark ? AppColors.borderDark : AppColors.borderLight,
-                width: 1.0,
-              ),
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: cs.outlineVariant, width: 1.0),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppConstants.radiusCircular),
+              borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide(
-                color: isDark ? AppColors.turfGreenNeon : AppColors.turfGreen,
+                color: isDark
+                    ? AppColors.turfGreenNeon
+                    : AppColors.primaryEmerald,
                 width: 1.5,
               ),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppConstants.radiusCircular),
-              borderSide: const BorderSide(
-                color: AppColors.redText,
-                width: 1.0,
-              ),
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: cs.error, width: 1.0),
             ),
             focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppConstants.radiusCircular),
-              borderSide: const BorderSide(
-                color: AppColors.redText,
-                width: 1.5,
-              ),
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: cs.error, width: 1.5),
             ),
           ),
         ),

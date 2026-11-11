@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/enums/match_status.dart';
 import '../../domain/entities/match_entity.dart';
+import '../../domain/entities/player_withdrawal_entity.dart';
 import 'match_registration_model.dart';
 import 'match_result_model.dart';
 
@@ -18,7 +19,11 @@ class MatchModel extends MatchEntity {
     super.pitchDimensions,
     super.confirmedPlayers,
     super.waitingList,
+    super.withdrawals,
     super.result,
+    super.isRecurringWeekly,
+    super.isAutoLineupEnabled,
+    super.registrationOpensAt,
     required super.createdAt,
   });
 
@@ -37,9 +42,23 @@ class MatchModel extends MatchEntity {
         )
         .toList();
 
+    final withdrawalsList = (json['withdrawals'] as List<dynamic>? ?? [])
+        .map(
+          (item) =>
+              PlayerWithdrawalEntity.fromJson(item as Map<String, dynamic>),
+        )
+        .toList();
+
     final resultJson = json['result'] as Map<String, dynamic>?;
     final matchResult = resultJson != null
         ? MatchResultModel.fromJson(resultJson)
+        : null;
+
+    final regOpensAtRaw = json['registrationOpensAt'];
+    final DateTime? registrationOpensAt = regOpensAtRaw != null
+        ? (regOpensAtRaw is Timestamp
+              ? regOpensAtRaw.toDate()
+              : DateTime.tryParse(regOpensAtRaw.toString()))
         : null;
 
     return MatchModel(
@@ -63,7 +82,11 @@ class MatchModel extends MatchEntity {
       pitchDimensions: json['pitchDimensions'] as String? ?? '25 × 40 m',
       confirmedPlayers: confirmedList,
       waitingList: waitList,
+      withdrawals: withdrawalsList,
       result: matchResult,
+      isRecurringWeekly: json['isRecurringWeekly'] as bool? ?? false,
+      isAutoLineupEnabled: json['isAutoLineupEnabled'] as bool? ?? true,
+      registrationOpensAt: registrationOpensAt,
       createdAt: json['createdAt'] != null
           ? (json['createdAt'] is Timestamp
                 ? (json['createdAt'] as Timestamp).toDate()
@@ -96,8 +119,13 @@ class MatchModel extends MatchEntity {
       'waitingList': waitingList
           .map((p) => MatchRegistrationModel.fromEntity(p).toJson())
           .toList(),
+      'withdrawals': withdrawals.map((w) => w.toJson()).toList(),
       if (result != null)
         'result': MatchResultModel.fromEntity(result!).toJson(),
+      'isRecurringWeekly': isRecurringWeekly,
+      'isAutoLineupEnabled': isAutoLineupEnabled,
+      if (registrationOpensAt != null)
+        'registrationOpensAt': Timestamp.fromDate(registrationOpensAt!),
       'createdAt': Timestamp.fromDate(createdAt),
     };
   }
@@ -116,9 +144,13 @@ class MatchModel extends MatchEntity {
       pitchDimensions: entity.pitchDimensions,
       confirmedPlayers: entity.confirmedPlayers,
       waitingList: entity.waitingList,
+      withdrawals: entity.withdrawals,
       result: entity.result != null
           ? MatchResultModel.fromEntity(entity.result!)
           : null,
+      isRecurringWeekly: entity.isRecurringWeekly,
+      isAutoLineupEnabled: entity.isAutoLineupEnabled,
+      registrationOpensAt: entity.registrationOpensAt,
       createdAt: entity.createdAt,
     );
   }

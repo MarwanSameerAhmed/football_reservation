@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_typography.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/presentation/widgets/kickoff_badge.dart';
 import '../../../../core/presentation/widgets/kickoff_card.dart';
@@ -41,112 +42,149 @@ class MatchResultCard extends StatelessWidget {
 
           // Scoreboard Container
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
             decoration: BoxDecoration(
-              color: isDark
-                  ? AppColors.surfaceDarkElevated
-                  : AppColors.canvasLight,
+              color: context.colorScheme.surfaceContainerLow,
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color: isDark ? AppColors.borderDark : AppColors.borderLight,
+                color: context.colorScheme.outlineVariant,
               ),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                // Team A
-                Expanded(
-                  child: Column(
+            child: result.teamCScore != null
+                ? Row(
                     children: [
-                      Container(
-                        width: 12,
-                        height: 12,
-                        decoration: const BoxDecoration(
-                          color: AppColors.turfGreen,
-                          shape: BoxShape.circle,
+                      // Team A
+                      Expanded(
+                        child: _buildTeamScoreItem(
+                          context,
+                          name: result.teamAName,
+                          score: result.teamAScore,
+                          color: isDark
+                              ? AppColors.turfGreenNeon
+                              : AppColors.primaryEmerald,
+                          isDark: isDark,
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        result.teamAName,
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: context.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
+                      const SizedBox(width: 4),
+                      // Team B
+                      Expanded(
+                        child: _buildTeamScoreItem(
+                          context,
+                          name: result.teamBName,
+                          score: result.teamBScore,
+                          color: context.colorScheme.onSurfaceVariant,
+                          isDark: isDark,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      // Team C
+                      Expanded(
+                        child: _buildTeamScoreItem(
+                          context,
+                          name: result.teamCName ?? 'الفريق الثالث (الأسود)',
+                          score: result.teamCScore!,
+                          color: context.colorScheme.onSurface,
+                          isDark: isDark,
                         ),
                       ),
                     ],
-                  ),
-                ),
-
-                // Center Score Numbers
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      Text(
-                        '${result.teamAScore}',
-                        style: context.textTheme.displayMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: isDark
-                              ? AppColors.turfGreenNeon
-                              : AppColors.darkSlate,
+                      // Team A
+                      Expanded(
+                        child: Column(
+                          children: [
+                            Container(
+                              width: 12,
+                              height: 12,
+                              decoration: const BoxDecoration(
+                                color: AppColors.turfGreen,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              result.teamAName,
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: context.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
+
+                      // Center Score Numbers
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10.0),
-                        child: Text(
-                          ':',
-                          style: context.textTheme.displayMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textSecondaryLight,
-                          ),
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '${result.teamAScore}',
+                              style: context.textTheme.displayMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: isDark
+                                    ? AppColors.turfGreenNeon
+                                    : AppColors.darkSlate,
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                              child: Text(
+                                ':',
+                                style: context.textTheme.displayMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textSecondaryLight,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              '${result.teamBScore}',
+                              style: context.textTheme.displayMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: isDark
+                                    ? AppColors.turfGreenNeon
+                                    : AppColors.darkSlate,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      Text(
-                        '${result.teamBScore}',
-                        style: context.textTheme.displayMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: isDark
-                              ? AppColors.turfGreenNeon
-                              : AppColors.darkSlate,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
 
-                // Team B
-                Expanded(
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 12,
-                        height: 12,
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? AppColors.textSecondaryLight
-                              : AppColors.darkSlate,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        result.teamBName,
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: context.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
+                      // Team B
+                      Expanded(
+                        child: Column(
+                          children: [
+                            Container(
+                              width: 12,
+                              height: 12,
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? AppColors.textSecondaryLight
+                                    : AppColors.darkSlate,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              result.teamBName,
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: context.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                ),
-              ],
-            ),
           ),
           const SizedBox(height: 14),
 
@@ -304,6 +342,51 @@ class MatchResultCard extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+
+  Widget _buildTeamScoreItem(
+    BuildContext context, {
+    required String name,
+    required int score,
+    required Color color,
+    required bool isDark,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                name.replaceAll(RegExp(r'الفريق.*?\('), '').replaceAll(')', '').trim(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: context.textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          '$score',
+          style: AppTypography.tabular(
+            context.textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: isDark ? AppColors.turfGreenNeon : AppColors.darkSlate,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/enums/player_position.dart';
 import '../../domain/entities/player_entity.dart';
+import '../../domain/usecases/create_player_usecase.dart';
 import '../../domain/usecases/get_players_usecase.dart';
 import '../../domain/usecases/update_player_skills_usecase.dart';
 import 'players_event.dart';
@@ -9,17 +10,22 @@ import 'players_state.dart';
 class PlayersBloc extends Bloc<PlayersEvent, PlayersState> {
   final GetPlayersUseCase _getPlayersUseCase;
   final UpdatePlayerSkillsUseCase _updatePlayerSkillsUseCase;
+  final CreatePlayerUseCase? _createPlayerUseCase;
 
   PlayersBloc({
     required GetPlayersUseCase getPlayersUseCase,
     required UpdatePlayerSkillsUseCase updatePlayerSkillsUseCase,
+    CreatePlayerUseCase? createPlayerUseCase,
   }) : _getPlayersUseCase = getPlayersUseCase,
        _updatePlayerSkillsUseCase = updatePlayerSkillsUseCase,
+       _createPlayerUseCase = createPlayerUseCase,
        super(const PlayersInitial()) {
     on<LoadPlayersRequested>(_onLoadPlayersRequested);
     on<FilterPlayersByPosition>(_onFilterPlayersByPosition);
     on<SearchPlayersQueryChanged>(_onSearchPlayersQueryChanged);
     on<UpdatePlayerSkillsSubmitted>(_onUpdatePlayerSkillsSubmitted);
+    on<AddPlayerSubmitted>(_onAddPlayerSubmitted);
+    on<UpdatePlayerPhotoRequested>(_onUpdatePlayerPhotoRequested);
   }
 
   Future<void> _onLoadPlayersRequested(
@@ -130,6 +136,90 @@ class PlayersBloc extends Bloc<PlayersEvent, PlayersState> {
         emit(PlayersErrorState(failure.message));
       },
     );
+  }
+
+  Future<void> _onAddPlayerSubmitted(
+    AddPlayerSubmitted event,
+    Emitter<PlayersState> emit,
+  ) async {
+    if (_createPlayerUseCase != null) {
+      final result = await _createPlayerUseCase(event.player);
+      result.fold(
+        onSuccess: (newPlayer) {
+          final currentState = state;
+          if (currentState is PlayersLoaded) {
+            final updatedAll = [newPlayer, ...currentState.allPlayers];
+            final updatedFiltered = _applyFilters(
+              updatedAll,
+              position: currentState.selectedPosition,
+              query: currentState.searchQuery,
+            );
+            emit(
+              currentState.copyWith(
+                allPlayers: updatedAll,
+                filteredPlayers: updatedFiltered,
+              ),
+            );
+          } else {
+            emit(
+              PlayersLoaded(
+                allPlayers: [newPlayer],
+                filteredPlayers: [newPlayer],
+                searchQuery: '',
+              ),
+            );
+          }
+        },
+        onFailure: (failure) {
+          emit(PlayersErrorState(failure.message));
+        },
+      );
+    } else {
+      // Fallback if usecase not injected
+      final currentState = state;
+      if (currentState is PlayersLoaded) {
+        final updatedAll = [event.player, ...currentState.allPlayers];
+        final updatedFiltered = _applyFilters(
+          updatedAll,
+          position: currentState.selectedPosition,
+          query: currentState.searchQuery,
+        );
+        emit(
+          currentState.copyWith(
+            allPlayers: updatedAll,
+            filteredPlayers: updatedFiltered,
+          ),
+        );
+      }
+    }
+  }
+
+  void _onUpdatePlayerPhotoRequested(
+    UpdatePlayerPhotoRequested event,
+    Emitter<PlayersState> emit,
+  ) {
+    final currentState = state;
+    if (currentState is PlayersLoaded) {
+      final updatedAll = currentState.allPlayers.map((p) {
+        if (p.id == event.playerId || p.userId == event.playerId) {
+          return p.copyWith(photoUrl: event.photoUrl);
+        }
+        return p;
+      }).toList();
+
+      final updatedFiltered = _applyFilters(
+        updatedAll,
+        position: currentState.selectedPosition,
+        query: currentState.searchQuery,
+      );
+
+      emit(
+        currentState.copyWith(
+          allPlayers: updatedAll,
+          filteredPlayers: updatedFiltered,
+        ),
+      );
+    }
   }
 
   List<PlayerEntity> _applyFilters(

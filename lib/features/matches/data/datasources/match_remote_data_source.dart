@@ -5,6 +5,7 @@ import '../../../../core/enums/player_position.dart';
 import '../../../../core/enums/registration_status.dart';
 import '../../../../core/exceptions/app_exceptions.dart';
 import '../../domain/entities/match_registration_entity.dart';
+import '../../domain/entities/player_withdrawal_entity.dart';
 import '../models/match_model.dart';
 import '../models/match_registration_model.dart';
 import '../models/match_result_model.dart';
@@ -26,6 +27,9 @@ abstract class MatchRemoteDataSource {
   Future<MatchModel> cancelRegistration({
     required String matchId,
     required String playerId,
+    String? playerName,
+    String? reason,
+    String? customNote,
   });
 
   Future<MatchResultModel> recordMatchResult(MatchResultModel result);
@@ -158,6 +162,9 @@ class FirebaseMatchRemoteDataSource implements MatchRemoteDataSource {
   Future<MatchModel> cancelRegistration({
     required String matchId,
     required String playerId,
+    String? playerName,
+    String? reason,
+    String? customNote,
   }) async {
     final match = await getMatchById(matchId);
 
@@ -167,6 +174,10 @@ class FirebaseMatchRemoteDataSource implements MatchRemoteDataSource {
     List<MatchRegistrationEntity> updatedWaiting = List.from(match.waitingList);
 
     final wasConfirmed = updatedConfirmed.any((r) => r.playerId == playerId);
+    final resolvedPlayerName = playerName ??
+        match.getPlayerRegistration(playerId)?.playerName ??
+        'لاعب';
+
     updatedConfirmed.removeWhere((r) => r.playerId == playerId);
     updatedWaiting.removeWhere((r) => r.playerId == playerId);
 
@@ -193,9 +204,23 @@ class FirebaseMatchRemoteDataSource implements MatchRemoteDataSource {
       newStatus = MatchStatus.upcoming;
     }
 
+    final updatedWithdrawals = List<PlayerWithdrawalEntity>.from(match.withdrawals);
+    if (reason != null && reason.trim().isNotEmpty) {
+      updatedWithdrawals.add(
+        PlayerWithdrawalEntity(
+          playerId: playerId,
+          playerName: resolvedPlayerName,
+          reason: reason.trim(),
+          customNote: customNote?.trim().isNotEmpty == true ? customNote!.trim() : null,
+          withdrawnAt: DateTime.now(),
+        ),
+      );
+    }
+
     final updatedMatch = match.copyWith(
       confirmedPlayers: updatedConfirmed,
       waitingList: reindexedWaiting,
+      withdrawals: updatedWithdrawals,
       status: newStatus,
     );
 
@@ -285,7 +310,7 @@ class MockMatchRemoteDataSource implements MatchRemoteDataSource {
           id: 'r2',
           matchId: 'm1',
           playerId: 'p2',
-          playerName: 'عصام الحضري',
+          playerName: 'فهد الدوسري',
           playerPosition: PlayerPosition.goalkeeper,
           registeredAt: now.subtract(const Duration(hours: 4)),
           status: RegistrationStatus.confirmed,
@@ -294,7 +319,7 @@ class MockMatchRemoteDataSource implements MatchRemoteDataSource {
           id: 'r3',
           matchId: 'm1',
           playerId: 'p3',
-          playerName: 'وائل جمعة',
+          playerName: 'عمر الشهري',
           playerPosition: PlayerPosition.defender,
           registeredAt: now.subtract(const Duration(hours: 3)),
           status: RegistrationStatus.confirmed,
@@ -303,8 +328,8 @@ class MockMatchRemoteDataSource implements MatchRemoteDataSource {
           id: 'r4',
           matchId: 'm1',
           playerId: 'p4',
-          playerName: 'محمد بركات',
-          playerPosition: PlayerPosition.midfielder,
+          playerName: 'سفيان العلي',
+          playerPosition: PlayerPosition.forward,
           registeredAt: now.subtract(const Duration(hours: 2)),
           status: RegistrationStatus.confirmed,
         ),
@@ -312,9 +337,18 @@ class MockMatchRemoteDataSource implements MatchRemoteDataSource {
           id: 'r5',
           matchId: 'm1',
           playerId: 'p5',
-          playerName: 'عماد متعب',
-          playerPosition: PlayerPosition.forward,
+          playerName: 'طارق الحربي',
+          playerPosition: PlayerPosition.midfielder,
           registeredAt: now.subtract(const Duration(hours: 1)),
+          status: RegistrationStatus.confirmed,
+        ),
+        MatchRegistrationModel(
+          id: 'r6',
+          matchId: 'm1',
+          playerId: 'p6',
+          playerName: 'سالم العنزي',
+          playerPosition: PlayerPosition.forward,
+          registeredAt: now.subtract(const Duration(minutes: 45)),
           status: RegistrationStatus.confirmed,
         ),
       ],
@@ -468,6 +502,9 @@ class MockMatchRemoteDataSource implements MatchRemoteDataSource {
   Future<MatchModel> cancelRegistration({
     required String matchId,
     required String playerId,
+    String? playerName,
+    String? reason,
+    String? customNote,
   }) async {
     if (delay > Duration.zero) await Future.delayed(delay);
     final match = _matches[matchId];
@@ -479,6 +516,10 @@ class MockMatchRemoteDataSource implements MatchRemoteDataSource {
     List<MatchRegistrationEntity> updatedWaiting = List.from(match.waitingList);
 
     final wasConfirmed = updatedConfirmed.any((r) => r.playerId == playerId);
+    final resolvedPlayerName = playerName ??
+        match.getPlayerRegistration(playerId)?.playerName ??
+        'لاعب';
+
     updatedConfirmed.removeWhere((r) => r.playerId == playerId);
     updatedWaiting.removeWhere((r) => r.playerId == playerId);
 
@@ -505,10 +546,24 @@ class MockMatchRemoteDataSource implements MatchRemoteDataSource {
       newStatus = MatchStatus.upcoming;
     }
 
+    final updatedWithdrawals = List<PlayerWithdrawalEntity>.from(match.withdrawals);
+    if (reason != null && reason.trim().isNotEmpty) {
+      updatedWithdrawals.add(
+        PlayerWithdrawalEntity(
+          playerId: playerId,
+          playerName: resolvedPlayerName,
+          reason: reason.trim(),
+          customNote: customNote?.trim().isNotEmpty == true ? customNote!.trim() : null,
+          withdrawnAt: DateTime.now(),
+        ),
+      );
+    }
+
     final updated = MatchModel.fromEntity(
       match.copyWith(
         confirmedPlayers: updatedConfirmed,
         waitingList: reindexedWaiting,
+        withdrawals: updatedWithdrawals,
         status: newStatus,
       ),
     );

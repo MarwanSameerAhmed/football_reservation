@@ -33,6 +33,9 @@ class PlayerSkills extends Equatable {
     return (sum / 5).round().clamp(1, 100);
   }
 
+  /// Alias for overall score matching EA Sports / FUT ratings.
+  int get overallRating => overallScore;
+
   /// Star rating on a scale from 1.0 to 5.0 stars (e.g. 4.2 / 5.0).
   double get starsRating {
     final stars = overallScore / 20.0;

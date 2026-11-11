@@ -5,6 +5,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/enums/player_position.dart';
 import '../../../../core/enums/user_role.dart';
 import '../../../../core/extensions/context_extensions.dart';
+import '../../../../core/presentation/widgets/kickoff_bottom_sheet_shell.dart';
 import '../../../../core/presentation/widgets/kickoff_widgets.dart';
 import '../../domain/entities/player_entity.dart';
 import '../../domain/entities/player_skills.dart';
@@ -29,6 +30,7 @@ class EditSkillsSheet extends StatefulWidget {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
       builder: (_) => BlocProvider.value(
         value: context.read<PlayersBloc>(),
@@ -89,65 +91,45 @@ class _EditSkillsSheetState extends State<EditSkillsSheet> {
     final isDark = context.isDarkMode;
     final currentSkills = _computeCurrentSkills();
 
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28.0)),
+    return KickoffBottomSheetShell(
+      title: 'تعديل تقييم المهارات',
+      subtitle: widget.player.name,
+      icon: Icons.tune_rounded,
+      heightFactor: 0.82,
+      bottomAction: KickoffActionButton(
+        label: 'حفظ التقييم الفني للمهارات',
+        onPressed: _save,
       ),
-      padding: EdgeInsets.only(
-        top: 16.0,
-        left: context.horizontalPadding,
-        right: context.horizontalPadding,
-        bottom: context.viewInsets.bottom + 24.0,
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Handle bar
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.borderDark : AppColors.borderLight,
-                  borderRadius: BorderRadius.circular(2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'المستوى الإجمالي الحالي',
+                style: context.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-
-            // Header Row
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'تعديل تقييم المهارات',
-                      style: context.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      widget.player.name,
-                      style: context.textTheme.bodySmall,
-                    ),
-                  ],
-                ),
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: isDark
-                        ? AppColors.meadowTintDark
-                        : AppColors.meadowTint,
+                    color: (isDark
+                            ? AppColors.turfGreenNeon
+                            : AppColors.primaryEmerald)
+                        .withValues(alpha: isDark ? 0.16 : 0.10),
                     borderRadius: BorderRadius.circular(
                       AppConstants.radiusCircular,
+                    ),
+                    border: Border.all(
+                      color: (isDark
+                              ? AppColors.turfGreenNeon
+                              : AppColors.primaryEmerald)
+                          .withValues(alpha: isDark ? 0.30 : 0.22),
                     ),
                   ),
                   child: Row(
@@ -156,7 +138,7 @@ class _EditSkillsSheetState extends State<EditSkillsSheet> {
                       const Icon(
                         Icons.star_rounded,
                         size: 16,
-                        color: Color(0xFFF59E0B),
+                        color: AppColors.amberText,
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -165,7 +147,7 @@ class _EditSkillsSheetState extends State<EditSkillsSheet> {
                           fontWeight: FontWeight.bold,
                           color: isDark
                               ? AppColors.turfGreenNeon
-                              : AppColors.turfGreenDark,
+                              : AppColors.primaryEmerald,
                         ),
                       ),
                     ],
@@ -208,16 +190,10 @@ class _EditSkillsSheetState extends State<EditSkillsSheet> {
                 (v) => setState(() => _goalkeeping = v),
               ),
 
-            const SizedBox(height: 24),
-
-            KickoffActionButton(
-              label: 'حفظ التقييم الفني للمهارات',
-              onPressed: _save,
-            ),
+            const SizedBox(height: 12),
           ],
         ),
-      ),
-    );
+      );
   }
 
   Widget _buildSlider(
@@ -245,11 +221,12 @@ class _EditSkillsSheetState extends State<EditSkillsSheet> {
           data: SliderTheme.of(context).copyWith(
             activeTrackColor: isDark
                 ? AppColors.turfGreenNeon
-                : AppColors.turfGreen,
-            thumbColor: isDark ? AppColors.turfGreenNeon : AppColors.turfGreen,
-            inactiveTrackColor: isDark
-                ? AppColors.surfaceDarkElevated
-                : AppColors.canvasLight,
+                : AppColors.primaryEmerald,
+            thumbColor: isDark
+                ? AppColors.turfGreenNeon
+                : AppColors.primaryEmerald,
+            inactiveTrackColor:
+                Theme.of(context).colorScheme.surfaceContainerHighest,
           ),
           child: Slider(
             value: value,

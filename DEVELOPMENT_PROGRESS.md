@@ -277,6 +277,21 @@ Last Updated: 2026-11-08
       - الفريق الثالث (الأسود)
     - Full rotating goalkeepers support ("في كل فريق بيكون الفريق كامل يحرس"): goalkeeping duties rotate across the entire team, balancing tactical outfield shape and cumulative skill ratings.
     - Deterministic multi-team greedy distribution and local optimization passes guarantee score difference variance $\le 5\%$.
+- [x] **Goalkeeper Rotation & Thoughtful Captaincy Engine (الكل راح يحرس + كابتن مدروس لكل فريق):**
+  - **Randomized Goalkeeper Rotation:** `TeamBalancer.generateGoalkeeperRotation()` generates a fair, unbiased rotation order for each squad so players know who guards the net first (#1), second (#2), etc.
+  - **Thoughtful Captain Selection:** `TeamBalancer.selectCaptain()` evaluates player seniority (matches played), match-winning peer respect (MOTM awards), overall technical skills, and playmaking assists to select the team captain.
+  - **Swap Turn Preservation:** Manual player swaps between squads seamlessly preserve the goalkeeper rotation turn slot of the incoming player and re-evaluate squad captains.
+  - **UI/UX Display:**
+    - `TeamCard` displays a Captain announcement banner, a horizontal rotation sequence timeline (`#1 -> #2 -> #3...`), and individual player badges.
+    - `TeamPlayerTile` displays custom avatar/photo, `👑 كابتن` badge with gold accent, and `🧤 حارس #N` turn badge.
+    - `MatchLineupCard` highlights the user's specific rotation turn (`🧤 دورك في الحراسة: الدورة #N`) and lists team captains.
+- [x] **Unified Kickoff Floating Pill Toast System (نظام التوست العائم الموحد):**
+  - **Component Architecture:** Created [`lib/core/presentation/widgets/kickoff_toast.dart`](file:///d:/football_reservation/lib/core/presentation/widgets/kickoff_toast.dart) featuring `KickoffToast` and `KickoffToastWidget`.
+  - **Visual Design:** Floating stadium pill container (`borderRadius: 28`), pitch-dark background (`#161A18`), subtle border (`white 12%`), soft shadow, bold typography, and contrasting badge circles (lime-green checkmark for success, red for error, amber for warning, sky blue for info).
+  - **Context Extensions:** Added `context.showSuccessToast()`, `context.showErrorToast()`, `context.showWarningToast()`, and `context.showInfoToast()` across `ContextExtensions`.
+  - **Global Theme Support:** Configured global `snackBarTheme` in both `lightTheme` and `darkTheme` in [`AppTheme`](file:///d:/football_reservation/lib/app/theme/app_theme.dart).
+  - **System-Wide Adoption:** Replaced all standalone `ScaffoldMessenger.showSnackBar` implementations across all app modules (Authentication, Matches, Team Generator, Polls, Notifications, Registrations, Players).
+  - **Test Suite:** Added comprehensive widget tests in [`test/kickoff_toast_test.dart`](file:///d:/football_reservation/test/kickoff_toast_test.dart) (100% passing).
 - [x] **Interactive Multi-Team Tap-to-Swap:**
   - Updated `TeamGeneratorBloc` and `TeamGeneratorPage` to support tap-to-swap across any two of the 3 teams with real-time selection feedback and visual indicator banners.
   - Responsive `BalanceIndicatorBar` updated with dynamic multi-team color legends and segmented ability comparison bars.

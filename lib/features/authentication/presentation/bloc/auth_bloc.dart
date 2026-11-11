@@ -1,5 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/enums/user_role.dart';
 import '../../../../core/services/push_notification_service.dart';
+import '../../domain/entities/user_entity.dart';
 import '../../domain/usecases/get_current_user_usecase.dart';
 import '../../domain/usecases/sign_in_usecase.dart';
 import '../../domain/usecases/sign_out_usecase.dart';
@@ -31,6 +33,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthSignInRequested>(_onAuthSignInRequested);
     on<AuthSignUpRequested>(_onAuthSignUpRequested);
     on<AuthSignOutRequested>(_onAuthSignOutRequested);
+    on<ToggleUserRoleRequested>(_onToggleUserRoleRequested);
+    on<AuthActivatePlayerRequested>(_onAuthActivatePlayerRequested);
+  }
+
+  void _onToggleUserRoleRequested(
+    ToggleUserRoleRequested event,
+    Emitter<AuthState> emit,
+  ) {
+    if (state is Authenticated) {
+      final currentUser = (state as Authenticated).user;
+      final newRole = currentUser.role.isAdmin
+          ? UserRole.player
+          : UserRole.admin;
+      final updatedUser = currentUser.copyWith(role: newRole);
+      emit(Authenticated(updatedUser));
+    }
   }
 
   Future<void> _onAuthCheckRequested(
@@ -108,6 +126,41 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(const Unauthenticated());
       },
       onFailure: (failure) => emit(AuthFailureState(failure.message)),
+    );
+  }
+
+  Future<void> _onAuthActivatePlayerRequested(
+    AuthActivatePlayerRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(const AuthLoading());
+    final email = '${event.id}@kickoff.app';
+    final result = await _signUpUseCase(
+      email: email,
+      password: 'passwordless_player_token',
+      displayName: event.displayName,
+      phoneNumber: event.phoneNumber,
+      role: UserRole.player,
+    );
+    result.fold(
+      onSuccess: (user) {
+        final userWithPhoto = user.copyWith(photoUrl: event.photoUrl);
+        _pushNotificationService?.saveTokenToUser(userWithPhoto.id);
+        emit(Authenticated(userWithPhoto));
+      },
+      onFailure: (failure) {
+        final fallbackUser = UserEntity(
+          id: event.id,
+          email: email,
+          displayName: event.displayName,
+          phoneNumber: event.phoneNumber,
+          photoUrl: event.photoUrl,
+          role: UserRole.player,
+          createdAt: DateTime.now(),
+        );
+        _pushNotificationService?.saveTokenToUser(fallbackUser.id);
+        emit(Authenticated(fallbackUser));
+      },
     );
   }
 }

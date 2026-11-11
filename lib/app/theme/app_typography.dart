@@ -1,92 +1,96 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
-/// Centralized Typography System for Kickoff.
+/// Centralized Typography System for Kickoff / Formtor.
 ///
-/// Designed to support Arabic (RTL) natively as the primary language
-/// with clear hierarchy, comfortable line-heights, and responsive weights.
+/// Configured with the official Thmanyah (خط ثمانية) font family from assets.
+/// Features crisp w800 headings, clean hierarchy for Arabic RTL, and
+/// tabular numeric helper styles (`tabularFigures`) for aligned counters.
 class AppTypography {
   AppTypography._();
 
-  static const String primaryFontFamily = 'Tajawal';
+  static const String primaryFontFamily = 'Thmanyah';
 
-  /// Builds a [TextTheme] for the application based on [colorScheme].
+  /// Helper list of font features for aligned scores, ratings, and timers.
+  static const List<FontFeature> tabularFeatures = [
+    FontFeature.tabularFigures(),
+  ];
+
+  /// Convenience modifier to apply aligned tabular figures to any [TextStyle].
+  static TextStyle tabular(TextStyle? style) =>
+      (style ?? const TextStyle(fontFamily: primaryFontFamily)).copyWith(
+        fontFeatures: tabularFeatures,
+      );
+
+  /// Builds a [TextTheme] tuned for Executive Arabic & tabular clarity.
   static TextTheme createTextTheme({
     required Color textColor,
     required Color secondaryColor,
   }) {
-    TextTheme baseTheme;
-    try {
-      baseTheme = GoogleFonts.tajawalTextTheme();
-    } catch (_) {
-      baseTheme = const TextTheme();
-    }
-
-    return baseTheme.copyWith(
-      displayLarge: baseTheme.displayLarge?.copyWith(
-        fontSize: 32.0,
-        fontWeight: FontWeight.bold,
-        color: textColor,
+    return TextTheme(
+      displayLarge: const TextStyle(
+        fontFamily: primaryFontFamily,
+        fontSize: 34.0,
+        fontWeight: FontWeight.w800,
+        height: 1.2,
+      ).copyWith(color: textColor),
+      displayMedium: const TextStyle(
+        fontFamily: primaryFontFamily,
+        fontSize: 28.0,
+        fontWeight: FontWeight.w800,
         height: 1.25,
-      ),
-      displayMedium: baseTheme.displayMedium?.copyWith(
-        fontSize: 26.0,
-        fontWeight: FontWeight.bold,
-        color: textColor,
-        height: 1.25,
-      ),
-      titleLarge: baseTheme.titleLarge?.copyWith(
-        fontSize: 20.0,
-        fontWeight: FontWeight.w700,
-        color: textColor,
+      ).copyWith(color: textColor),
+      titleLarge: const TextStyle(
+        fontFamily: primaryFontFamily,
+        fontSize: 22.0,
+        fontWeight: FontWeight.w800,
         height: 1.3,
-      ),
-      titleMedium: baseTheme.titleMedium?.copyWith(
-        fontSize: 16.0,
-        fontWeight: FontWeight.w600,
-        color: textColor,
-        height: 1.35,
-      ),
-      titleSmall: baseTheme.titleSmall?.copyWith(
-        fontSize: 14.0,
-        fontWeight: FontWeight.w600,
-        color: secondaryColor,
-        height: 1.35,
-      ),
-      bodyLarge: baseTheme.bodyLarge?.copyWith(
-        fontSize: 15.0,
-        fontWeight: FontWeight.w500,
-        color: textColor,
-        height: 1.4,
-      ),
-      bodyMedium: baseTheme.bodyMedium?.copyWith(
-        fontSize: 13.5,
-        fontWeight: FontWeight.normal,
-        color: secondaryColor,
-        height: 1.45,
-      ),
-      bodySmall: baseTheme.bodySmall?.copyWith(
-        fontSize: 12.0,
-        fontWeight: FontWeight.normal,
-        color: secondaryColor,
-        height: 1.4,
-      ),
-      labelLarge: baseTheme.labelLarge?.copyWith(
-        fontSize: 14.0,
+      ).copyWith(color: textColor),
+      titleMedium: const TextStyle(
+        fontFamily: primaryFontFamily,
+        fontSize: 18.0,
         fontWeight: FontWeight.w700,
-        color: textColor,
-        letterSpacing: 0.2,
-      ),
-      labelMedium: baseTheme.labelMedium?.copyWith(
-        fontSize: 12.0,
+        height: 1.35,
+      ).copyWith(color: textColor),
+      titleSmall: const TextStyle(
+        fontFamily: primaryFontFamily,
+        fontSize: 15.5,
         fontWeight: FontWeight.w600,
-        color: secondaryColor,
-      ),
-      labelSmall: baseTheme.labelSmall?.copyWith(
-        fontSize: 10.5,
+        height: 1.35,
+      ).copyWith(color: secondaryColor),
+      bodyLarge: const TextStyle(
+        fontFamily: primaryFontFamily,
+        fontSize: 16.5,
+        fontWeight: FontWeight.w500,
+        height: 1.4,
+      ).copyWith(color: textColor),
+      bodyMedium: const TextStyle(
+        fontFamily: primaryFontFamily,
+        fontSize: 14.5,
+        fontWeight: FontWeight.normal,
+        height: 1.45,
+      ).copyWith(color: secondaryColor),
+      bodySmall: const TextStyle(
+        fontFamily: primaryFontFamily,
+        fontSize: 13.0,
+        fontWeight: FontWeight.normal,
+        height: 1.4,
+      ).copyWith(color: secondaryColor),
+      labelLarge: const TextStyle(
+        fontFamily: primaryFontFamily,
+        fontSize: 15.0,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.15,
+      ).copyWith(color: textColor),
+      labelMedium: const TextStyle(
+        fontFamily: primaryFontFamily,
+        fontSize: 13.0,
         fontWeight: FontWeight.w600,
-        color: secondaryColor,
-      ),
+      ).copyWith(color: secondaryColor),
+      labelSmall: const TextStyle(
+        fontFamily: primaryFontFamily,
+        fontSize: 11.5,
+        fontWeight: FontWeight.w600,
+      ).copyWith(color: secondaryColor),
     );
   }
 }

@@ -1,22 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_typography.dart';
 import '../../../../app/theme/theme_cubit.dart';
+import '../../../../core/enums/player_position.dart';
 import '../../../../core/enums/user_role.dart';
 import '../../../../core/extensions/context_extensions.dart';
+import '../../../../core/motion/kickoff_motion.dart';
 import '../../../../core/presentation/widgets/kickoff_widgets.dart';
+import '../../../authentication/domain/entities/user_entity.dart';
 import '../../../authentication/presentation/bloc/auth_bloc.dart';
+import '../../../authentication/presentation/bloc/auth_event.dart';
 import '../../../authentication/presentation/bloc/auth_state.dart';
 import '../../../notifications/presentation/widgets/notification_bell_button.dart';
-import '../../../players/presentation/bloc/players_bloc.dart';
-import '../../../players/presentation/bloc/players_state.dart';
-import '../../../players/presentation/widgets/player_card.dart';
-import '../../../polls/domain/entities/poll_entity.dart';
+import '../../../players/presentation/widgets/add_player_dialog.dart';
 import '../../../polls/presentation/bloc/polls_bloc.dart';
 import '../../../polls/presentation/bloc/polls_event.dart';
 import '../../../polls/presentation/bloc/polls_state.dart';
+import '../../../polls/presentation/widgets/create_poll_sheet.dart';
 import '../../../polls/presentation/widgets/poll_card.dart';
+import '../../../../core/enums/match_status.dart';
+import '../../domain/entities/match_entity.dart';
+import '../../../team_generator/domain/entities/team_lineup_entity.dart';
+import '../../../team_generator/presentation/bloc/team_generator_bloc.dart';
+import '../../../team_generator/presentation/bloc/team_generator_state.dart';
+import '../../../team_generator/presentation/widgets/select_match_for_lineup_sheet.dart';
+import '../bloc/matches_bloc.dart';
+import '../bloc/matches_event.dart';
+import '../bloc/matches_state.dart';
+import '../widgets/create_match_dialog.dart';
+import '../widgets/match_lineup_card.dart';
+import '../widgets/withdrawal_reason_dialog.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -26,429 +42,801 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  int _navIndex = 0;
+  @override
+  void initState() {
+    super.initState();
+    context.read<MatchesBloc>().add(const LoadMatchesRequested());
+  }
 
   @override
   Widget build(BuildContext context) {
     final themeCubit = context.read<ThemeCubit>();
     final isDark = context.isDarkMode;
+    final authState = context.watch<AuthBloc>().state;
+    final user = authState is Authenticated ? authState.user : null;
+    final isAdmin = user?.role == UserRole.admin;
+    final userId = user?.id ?? 'admin_1';
+    final userName = user?.displayName ?? 'مروان سمير';
 
     return KickoffResponsiveShell(
       child: Scaffold(
-        body: SafeArea(
-          bottom: false,
-          child: ListView(
-            padding: EdgeInsets.symmetric(
-              horizontal: context.horizontalPadding,
-              vertical: context.verticalPadding,
-            ),
-            children: [
-              // Top User Greeting & Controls (matching Screen 2)
-              Row(
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(80),
+          child: SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: context.horizontalPadding,
+                vertical: 6,
+              ),
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
                       children: [
-                        Text(
-                          context.l10n.isArabic ? 'مرحباً 👋' : 'Hello 👋',
-                          style: context.textTheme.bodySmall,
+                        // User Avatar
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isDark
+                                ? AppColors.surfaceDarkElevated
+                                : AppColors.meadowTint,
+                            border: Border.all(
+                              color: isDark
+                                  ? AppColors.turfGreenNeon.withValues(alpha: 0.4)
+                                  : AppColors.primaryEmerald.withValues(alpha: 0.3),
+                              width: 1.8,
+                            ),
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: _buildUserAvatar(user, userName, isDark),
                         ),
-                        const SizedBox(height: 2),
-                        BlocBuilder<AuthBloc, AuthState>(
-                          builder: (context, authState) {
-                            final user = authState is Authenticated
-                                ? authState.user
-                                : null;
-                            final name =
-                                user?.displayName ??
-                                (context.l10n.isArabic
-                                    ? 'مروان سمير'
-                                    : 'Marwan Sameer');
-                            final role = user?.role ?? UserRole.admin;
-
-                            return Wrap(
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              spacing: 6,
-                              runSpacing: 4,
-                              children: [
-                                Text(
-                                  name,
-                                  style: context.textTheme.titleMedium
-                                      ?.copyWith(fontWeight: FontWeight.bold),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                isAdmin
+                                    ? 'أهلاً يا كابتن 👑'
+                                    : 'مرحباً يا بطل 👋',
+                                style: TextStyle(
+                                  color: isDark
+                                      ? AppColors.turfGreenNeon
+                                      : AppColors.primaryEmerald,
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w700,
                                 ),
-                                KickoffBadge(
-                                  label: context.l10n.isArabic
-                                      ? role.labelArabic
-                                      : role.labelEnglish,
-                                  variant: role.isAdmin
-                                      ? BadgeVariant.success
-                                      : BadgeVariant.neutral,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                userName,
+                                style: context.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 18.5,
                                 ),
-                              ],
-                            );
-                          },
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 8),
-
-                  // Quick Controls: Notifications, Theme Toggle, Language & Auth Account
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const NotificationBellButton(),
-                      const SizedBox(width: 4),
+                      const NotificationBellButton(size: 44),
+                      const SizedBox(width: 8),
                       KickoffCircleButton(
                         icon: isDark
                             ? Icons.light_mode_rounded
                             : Icons.dark_mode_rounded,
                         onPressed: () => themeCubit.toggleTheme(),
-                        size: context.responsive<double>(
-                          standard: 40.0,
-                          compact: 36.0,
-                        ),
+                        size: 44,
                         tooltip: 'تغيير المظهر',
-                      ),
-                      const SizedBox(width: 6),
-                      KickoffCircleButton(
-                        icon: Icons.language_rounded,
-                        onPressed: () => themeCubit.toggleLanguage(),
-                        size: context.responsive<double>(
-                          standard: 40.0,
-                          compact: 36.0,
-                        ),
-                        tooltip: 'تغيير اللغة',
-                      ),
-                      const SizedBox(width: 6),
-                      KickoffCircleButton(
-                        icon: Icons.login_rounded,
-                        onPressed: () => context.push('/sign-in'),
-                        size: context.responsive<double>(
-                          standard: 40.0,
-                          compact: 36.0,
-                        ),
-                        tooltip: 'تسجيل الدخول / تبديل الحساب',
                       ),
                     ],
                   ),
                 ],
               ),
-
-              const SizedBox(height: 18),
-
-              // Search bar with green filter icon (matching Screen 2)
-              KickoffSearchField(onChanged: (val) {}, onFilterTap: () {}),
-
-              const SizedBox(height: 24),
-
-              // "Recommended for you" Section
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      context.l10n.isArabic
-                          ? 'المباراة القادمة المقترحة'
-                          : 'Recommended for you',
-                      style: context.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+        body: ListView(
+          padding: EdgeInsets.symmetric(
+            horizontal: context.horizontalPadding,
+            vertical: 8,
+          ),
+          children: [
+            // Role Pill & Instant Switcher Bar
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isAdmin
+                        ? (isDark
+                              ? AppColors.turfGreenNeon.withValues(alpha: 0.2)
+                              : AppColors.meadowTint)
+                        : (isDark
+                              ? AppColors.surfaceDarkElevated
+                              : AppColors.canvasLight),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: isAdmin
+                          ? AppColors.turfGreen
+                          : (isDark
+                                ? AppColors.borderDark
+                                : AppColors.borderLight),
                     ),
                   ),
-                  TextButton(
-                    onPressed: () {},
-                    child: Text(context.l10n.seeAll),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-
-              // Large Hero Card (matching Screen 2)
-              KickoffHeroCard(
-                title: context.l10n.isArabic
-                    ? 'ملعب النخبة الدولي'
-                    : 'Elite Turf Arena',
-                subtitle: context.l10n.isArabic
-                    ? 'المنطقة المركزية • 0.8 كم'
-                    : 'Downtown District • 0.8 km',
-                rating: '4.9',
-                fee: '90 دقيقة',
-                distanceOrDate: '0.8 km',
-                onTap: () => context.push('/match-details'),
-              ),
-
-              const SizedBox(height: 28),
-
-              // Section: Court Vibe Check / Matches List (matching Screen 2)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      context.l10n.isArabic
-                          ? 'حالة المباريات الأسبوعية'
-                          : 'Court Vibe Check',
-                      style: context.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                  child: Text(
+                    isAdmin
+                        ? '👑 مسؤول المجموعة (الكابتن)'
+                        : '⚽ لاعب في المجموعة',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: isAdmin
+                          ? (isDark
+                                ? AppColors.turfGreenNeon
+                                : AppColors.turfGreenDark)
+                          : (isDark
+                                ? AppColors.textSecondaryDark
+                                : AppColors.textSecondaryLight),
                     ),
                   ),
-                  TextButton(
-                    onPressed: () {},
-                    child: Text(context.l10n.seeAll),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-
-              KickoffListCard(
-                title: context.l10n.isArabic
-                    ? 'مباراة الجمعة الكبرى'
-                    : 'Victory Turf Ground',
-                subtitle: context.l10n.isArabic
-                    ? 'ملعب بارك • 1.2 كم'
-                    : 'East Park • 1.2 km',
-                badgeLabel: context.l10n.isArabic
-                    ? '🟢 مكتمل تقريباً'
-                    : '🟢 Quiet',
-                badgeVariant: BadgeVariant.success,
-                extraInfo: context.l10n.isArabic
-                    ? 'باقي 4 مقاعد'
-                    : '• 4 slots free',
-                onTap: () => context.push('/reserve'),
-              ),
-
-              const SizedBox(height: 12),
-
-              KickoffListCard(
-                title: context.l10n.isArabic
-                    ? 'كلاسيكو الثلاثاء'
-                    : 'Sky Turf BD',
-                subtitle: context.l10n.isArabic
-                    ? 'ملعب غولشان • 2.8 كم'
-                    : 'Gulshan • 2.8 km',
-                badgeLabel: context.l10n.isArabic ? '🟡 حماسي' : '🟡 Moderate',
-                badgeVariant: BadgeVariant.warning,
-                extraInfo: context.l10n.isArabic
-                    ? 'باقي مقعدان'
-                    : '• 2 slots free',
-                onTap: () => context.push('/reserve'),
-              ),
-
-              const SizedBox(height: 28),
-
-              // Section: Active Polls & Voting Preview
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      context.l10n.isArabic
-                          ? 'استطلاعات الرأي والتصويت 📋'
-                          : 'Active Polls & Voting',
-                      style: context.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () => context.push('/polls'),
-                    child: Text(context.l10n.seeAll),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-
-              BlocBuilder<PollsBloc, PollsState>(
-                builder: (context, pollsState) {
-                  if (pollsState is PollsLoaded &&
-                      pollsState.polls.isNotEmpty) {
-                    PollEntity latestActive = pollsState.polls.first;
-                    for (final p in pollsState.polls) {
-                      if (p.isActive) {
-                        latestActive = p;
-                        break;
-                      }
-                    }
-
-                    return BlocBuilder<AuthBloc, AuthState>(
-                      builder: (context, authState) {
-                        final currentUserId = authState is Authenticated
-                            ? authState.user.id
-                            : 'admin_1';
-                        final isAdmin =
-                            authState is Authenticated &&
-                            authState.user.role == UserRole.admin;
-
-                        return PollCard(
-                          poll: latestActive,
-                          currentUserId: currentUserId,
-                          isAdmin: isAdmin,
-                          onVoteOption: (option) {
-                            context.read<PollsBloc>().add(
-                              CastVoteRequested(
-                                pollId: latestActive.id,
-                                optionId: option.id,
-                                userId: currentUserId,
-                              ),
-                            );
-                          },
-                          onClosePoll: () {
-                            context.read<PollsBloc>().add(
-                              ClosePollRequested(latestActive.id),
-                            );
-                          },
-                        );
-                      },
+                ),
+                // Quick Switch Role Button for testing & clarity
+                GestureDetector(
+                  onTap: () {
+                    context.read<AuthBloc>().add(
+                      const ToggleUserRoleRequested(),
                     );
-                  }
-                  return const SizedBox.shrink();
-                },
-              ),
-
-              const SizedBox(height: 20),
-
-              // Quick Leaderboards Banner Card
-              KickoffCard(
-                padding: const EdgeInsets.all(16),
-                onTap: () => context.push('/statistics'),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
+                    context.showSuccessToast(
+                      isAdmin
+                          ? 'تم التبديل لوضع اللاعب العادي ⚽'
+                          : 'تم تفعيل وضع الكابتن (صلاحيات كاملة) 👑',
+                      duration: const Duration(seconds: 2),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? AppColors.surfaceDarkElevated
+                          : AppColors.surfaceLight,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
                         color: isDark
-                            ? AppColors.surfaceDarkElevated
-                            : AppColors.meadowTint,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.leaderboard_rounded,
-                        color: AppColors.turfGreenDark,
-                        size: 22,
+                            ? AppColors.borderDark
+                            : AppColors.borderLight,
                       ),
                     ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.swap_horiz_rounded, size: 13),
+                        const SizedBox(width: 3),
+                        Text(
+                          isAdmin ? 'تجربة كـ لاعب' : 'تفعيل الكابتن',
+                          style: const TextStyle(fontSize: 10),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 18),
+
+            // 2. Search bar without unnecessary filter button
+            KickoffSearchField(showFilterButton: false, onChanged: (val) {}),
+
+            const SizedBox(height: 18),
+
+            // 3. Captain's Quick Control Center (Visible only to Admin)
+            if (isAdmin) ...[
+              KickoffMotionReveal(
+                delay: const Duration(milliseconds: 50),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: context.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: context.colorScheme.outlineVariant,
+                      width: 1.0,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            'لوحة صدارة المجموعة 🏆',
-                            style: context.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
+                          Flexible(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(7),
+                                  decoration: BoxDecoration(
+                                    color: (isDark
+                                            ? AppColors.turfGreenNeon
+                                            : AppColors.primaryEmerald)
+                                        .withValues(alpha: isDark ? 0.16 : 0.11),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Icon(
+                                    Icons.shield_outlined,
+                                    size: 18,
+                                    color: isDark
+                                        ? AppColors.turfGreenNeon
+                                        : AppColors.primaryEmerald,
+                                  ),
+                                ),
+                                const SizedBox(width: 9),
+                                Flexible(
+                                  child: Text(
+                                    'لوحة تحكم الكابتن',
+                                    style: context.textTheme.titleSmall?.copyWith(
+                                      color: context.colorScheme.onSurface,
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 14.5,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'قائمة الهدافين، صناع اللعب، وأفضل الحراس',
-                            style: context.textTheme.bodySmall,
+                          const SizedBox(width: 8),
+                          const KickoffBadge(
+                            label: 'صلاحيات الإدارة',
+                            variant: BadgeVariant.success,
                           ),
                         ],
                       ),
-                    ),
-                    const Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 16,
-                      color: AppColors.textSecondaryLight,
-                    ),
-                  ],
+                      const SizedBox(height: 14),
+
+                      // Quick Action Grid (Semantic Colored Squircles)
+                      Row(
+                        children: [
+                          _buildAdminToolItem(
+                            context: context,
+                            icon: Icons.calendar_month_rounded,
+                            label: 'حجز مباراة',
+                            accentColor: isDark
+                                ? AppColors.turfGreenNeon
+                                : AppColors.primaryEmerald,
+                            onTap: () => CreateMatchDialog.show(context),
+                            isDark: isDark,
+                          ),
+                          const SizedBox(width: 8),
+                          _buildAdminToolItem(
+                            context: context,
+                            icon: Icons.person_add_rounded,
+                            label: 'إضافة لاعب',
+                            accentColor: isDark
+                                ? AppColors.amberNeon
+                                : AppColors.amberText,
+                            onTap: () => AddPlayerDialog.show(context),
+                            isDark: isDark,
+                          ),
+                          const SizedBox(width: 8),
+                          _buildAdminToolItem(
+                            context: context,
+                            icon: Icons.how_to_vote_rounded,
+                            label: 'طرح تصويت',
+                            accentColor: isDark
+                                ? AppColors.blueNeon
+                                : AppColors.blueAccent,
+                            onTap: () {
+                              CreatePollSheet.show(
+                                context,
+                                onCreatePoll: (poll) {
+                                  context.read<PollsBloc>().add(
+                                    CreatePollRequested(poll),
+                                  );
+                                },
+                              );
+                            },
+                            isDark: isDark,
+                          ),
+                          const SizedBox(width: 8),
+                          _buildAdminToolItem(
+                            context: context,
+                            icon: Icons.balance_rounded,
+                            label: 'توزيع الفرق',
+                            accentColor: isDark
+                                ? AppColors.indigoNeon
+                                : AppColors.indigoAccent,
+                            onTap: () => _onTapTeamGenerator(context),
+                            isDark: isDark,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
+              const SizedBox(height: 20),
+            ],
 
-              const SizedBox(height: 28),
-
-              // Section: Top Squad Players & Technical Ratings
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      context.l10n.isArabic
-                          ? 'أبرز لاعبي المجموعة وتقييماتهم'
-                          : 'Squad Players & Ratings',
-                      style: context.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+            // 4. Featured Matchday Hero Card
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    'المباراة القادمة المقترحة',
+                    style: context.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  TextButton(
-                    onPressed: () => context.push('/players'),
-                    child: Text(context.l10n.seeAll),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
+                ),
+                // TextButton(
+                //   onPressed: () => context.go('/matches'),
+                //   child: Text(context.l10n.seeAll),
+                // ),
+              ],
+            ),
+            const SizedBox(height: 8),
 
-              // Quick preview of top players
-              BlocBuilder<PlayersBloc, PlayersState>(
-                builder: (context, state) {
-                  if (state is PlayersLoaded && state.allPlayers.isNotEmpty) {
-                    final previewPlayers = state.allPlayers.take(2).toList();
-                    return Column(
-                      children: previewPlayers.map((player) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 10.0),
-                          child: PlayerCard(
-                            player: player,
-                            onTap: () => context.push(
-                              '/player-details/${player.id}',
-                              extra: player,
-                            ),
+            BlocBuilder<MatchesBloc, MatchesState>(
+              builder: (context, state) {
+                MatchEntity? featuredMatch;
+                if (state is MatchesLoaded && state.matches.isNotEmpty) {
+                  featuredMatch = state.matches.first;
+                }
+
+                final title = featuredMatch?.title ?? 'مباراة الجمعة الكبرى';
+                final stadium =
+                    (featuredMatch?.pitchName ?? 'ملعب النخبة الدولي')
+                        .replaceAll(RegExp(r'\s*\(.*?\)'), '')
+                        .trim();
+                final location = (featuredMatch?.location ?? 'حي النخيل')
+                    .split('•')
+                    .first
+                    .replaceAll(RegExp(r'-.*'), '')
+                    .trim();
+                final confirmed = featuredMatch?.confirmedPlayers.length ?? 14;
+                final max = featuredMatch?.maxPlayers ?? 18;
+                final waiting = featuredMatch?.waitingList.length ?? 0;
+                final isUserIn =
+                    featuredMatch?.confirmedPlayers.any(
+                      (p) => p.playerId == userId,
+                    ) ??
+                    false;
+
+                final dateStr = featuredMatch != null
+                    ? DateFormat(
+                        'EEEE d MMMM',
+                        'ar',
+                      ).format(featuredMatch.matchDateTime)
+                    : 'الجمعة 14 نوفمبر';
+                final timeStr = featuredMatch != null
+                    ? DateFormat(
+                        'hh:mm a',
+                        'ar',
+                      ).format(featuredMatch.matchDateTime)
+                    : '08:30 م';
+
+                return KickoffHeroCard(
+                  title: stadium,
+                  subtitle: location,
+                  matchTitle: title,
+                  matchDate: dateStr,
+                  matchTime: timeStr,
+                  confirmedPlayers: confirmed,
+                  maxPlayers: max,
+                  waitingCount: waiting,
+                  isUserRegistered: isUserIn,
+                  isRegistrationOpen: featuredMatch?.isRegistrationOpen ?? true,
+                  registrationOpensAt: featuredMatch?.registrationOpensAt,
+                  onTap: () {
+                    if (featuredMatch != null) {
+                      context.push('/match-details', extra: featuredMatch);
+                    } else {
+                      context.push('/match-details');
+                    }
+                  },
+                  onRsvpTap: () {
+                    if (featuredMatch != null) {
+                      if (isUserIn) {
+                        WithdrawalReasonDialog.show(
+                          context,
+                          match: featuredMatch,
+                          playerId: userId,
+                          playerName: userName,
+                        );
+                      } else {
+                        context.read<MatchesBloc>().add(
+                          RegisterPlayerRequested(
+                            matchId: featuredMatch.id,
+                            playerId: userId,
+                            playerName: userName,
+                            position: PlayerPosition.midfielder,
                           ),
                         );
-                      }).toList(),
-                    );
-                  }
-                  return const SizedBox.shrink();
-                },
-              ),
+                      }
+                    } else {
+                      context.push('/reserve');
+                    }
+                  },
+                );
+              },
+            ),
 
-              const SizedBox(height: 100), // Spacing for floating bottom bar
-            ],
-          ),
-        ),
-        bottomNavigationBar: KickoffBottomNavBar(
-          currentIndex: _navIndex,
-          onTap: (index) {
-            setState(() => _navIndex = index);
-            if (index == 2) {
-              context.push('/players');
-            } else if (index == 3) {
-              context.push('/polls');
-            }
-          },
-          items: [
-            NavItemData(icon: Icons.home_filled, label: context.l10n.home),
-            NavItemData(
-              icon: Icons.calendar_today_rounded,
-              label: context.l10n.matches,
+            // Approved Match Lineup for the registered player (Displayed ONLY after official finalization)
+            BlocBuilder<MatchesBloc, MatchesState>(
+              builder: (context, matchState) {
+                MatchEntity? match;
+                if (matchState is MatchesLoaded &&
+                    matchState.matches.isNotEmpty) {
+                  match = matchState.matches.first;
+                }
+                final isUserIn =
+                    match?.confirmedPlayers.any((p) => p.playerId == userId) ??
+                    false;
+
+                if (match == null || !isUserIn) return const SizedBox.shrink();
+
+                return BlocBuilder<TeamGeneratorBloc, TeamGeneratorState>(
+                  builder: (context, teamState) {
+                    TeamLineupEntity? lineup;
+                    if (teamState is TeamGeneratorSuccess) {
+                      lineup = teamState.currentLineup;
+                    }
+
+                    // Only show the lineup card once the captain has officially generated & finalized it
+                    if (lineup == null || !lineup.isFinalized) {
+                      return const SizedBox.shrink();
+                    }
+
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 18.0),
+                      child: MatchLineupCard(
+                        match: match!,
+                        lineup: lineup,
+                        currentUserId: userId,
+                        currentUserName: userName,
+                        onTap: () {
+                          if (isAdmin) {
+                            context.push('/team-generator', extra: match);
+                          }
+                        },
+                      ),
+                    );
+                  },
+                );
+              },
             ),
-            NavItemData(
-              icon: Icons.people_alt_rounded,
-              label: context.l10n.isArabic ? 'اللاعبون' : 'Players',
+
+            const SizedBox(height: 24),
+
+            // 5. Weekly Schedule & Upcoming Bookings
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    'جدول الحجوزات والمباريات',
+                    style: context.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                // TextButton(
+                //   onPressed: () => context.go('/matches'),
+                //   child: Text(context.l10n.seeAll),
+                // ),
+              ],
             ),
-            NavItemData(
-              icon: Icons.poll_rounded,
-              label: context.l10n.isArabic ? 'التصويت' : 'Polls',
+            const SizedBox(height: 8),
+
+            BlocBuilder<MatchesBloc, MatchesState>(
+              builder: (context, matchState) {
+                if (matchState is MatchesLoaded &&
+                    matchState.matches.isNotEmpty) {
+                  final displayMatches = matchState.matches.take(3).toList();
+                  return Column(
+                    children: displayMatches.map((m) {
+                      final isUserIn = m.confirmedPlayers.any(
+                        (p) => p.playerId == userId,
+                      );
+                      final isWaiting = m.waitingList.any(
+                        (p) => p.playerId == userId,
+                      );
+                      final isFull = m.confirmedPlayers.length >= m.maxPlayers;
+                      final dateStr = DateFormat(
+                        'EEEE d MMMM',
+                        'ar',
+                      ).format(m.matchDateTime);
+                      final timeStr = DateFormat(
+                        'hh:mm a',
+                        'ar',
+                      ).format(m.matchDateTime);
+
+                      final activeAccent = isDark
+                          ? AppColors.turfGreenNeon
+                          : AppColors.primaryEmerald;
+                      final cs = context.colorScheme;
+
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: KickoffPressable(
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () =>
+                                  context.push('/match-details', extra: m),
+                              borderRadius: BorderRadius.circular(18),
+                              child: Container(
+                                padding: const EdgeInsets.all(13),
+                                decoration: BoxDecoration(
+                                  color: cs.surface,
+                                  borderRadius: BorderRadius.circular(18),
+                                  border: Border.all(
+                                    color: isUserIn
+                                        ? activeAccent
+                                        : cs.outlineVariant,
+                                    width: isUserIn ? 1.5 : 1.0,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 44,
+                                      height: 44,
+                                      decoration: BoxDecoration(
+                                        color: activeAccent.withValues(
+                                          alpha: isDark ? 0.16 : 0.10,
+                                        ),
+                                        borderRadius: BorderRadius.circular(13),
+                                      ),
+                                      child: Icon(
+                                        Icons.sports_soccer_rounded,
+                                        size: 22,
+                                        color: activeAccent,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            m.title,
+                                            style: context.textTheme.titleSmall
+                                                ?.copyWith(
+                                                  color: cs.onSurface,
+                                                  fontWeight: FontWeight.w700,
+                                                  fontSize: 14.5,
+                                                ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 3),
+                                          Text(
+                                            '$dateStr • $timeStr',
+                                            style: AppTypography.tabular(
+                                              TextStyle(
+                                                fontSize: 12,
+                                                color: cs.onSurfaceVariant,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    KickoffBadge(
+                                      label: isUserIn
+                                          ? 'مسجل ✓'
+                                          : (isWaiting
+                                                ? 'بالانتظار'
+                                                : (isFull
+                                                      ? 'مكتمل'
+                                                      : 'متاح (${m.maxPlayers - m.confirmedPlayers.length})')),
+                                      variant: isUserIn
+                                          ? BadgeVariant.success
+                                          : (isWaiting || isFull
+                                                ? BadgeVariant.warning
+                                                : BadgeVariant.neutral),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
             ),
+            const SizedBox(height: 18),
+
+            // 6. Active Polls & MOTM Voting Preview
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    'استطلاعات الرأي والتصويت',
+                    style: context.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                // TextButton(
+                //   onPressed: () => context.push('/polls'),
+                //   child: Text(context.l10n.seeAll),
+                // ),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            BlocBuilder<PollsBloc, PollsState>(
+              builder: (context, pollsState) {
+                if (pollsState is PollsLoaded && pollsState.polls.isNotEmpty) {
+                  final latestActive = pollsState.polls.first;
+                  return PollCard(
+                    poll: latestActive,
+                    currentUserId: userId,
+                    isAdmin: isAdmin,
+                    onVoteOption: (option) {
+                      context.read<PollsBloc>().add(
+                        CastVoteRequested(
+                          pollId: latestActive.id,
+                          optionId: option.id,
+                          userId: userId,
+                        ),
+                      );
+                    },
+                    onClosePoll: () {
+                      context.read<PollsBloc>().add(
+                        ClosePollRequested(latestActive.id),
+                      );
+                    },
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+
+            const SizedBox(height: 40),
           ],
         ),
       ),
+    );
+  }
+
+  void _onTapTeamGenerator(BuildContext context) {
+    final matchesState = context.read<MatchesBloc>().state;
+    final matches = matchesState is MatchesLoaded
+        ? matchesState.matches
+            .where((m) => m.status != MatchStatus.completed)
+            .toList()
+        : <MatchEntity>[];
+
+    if (matches.isEmpty) {
+      context.showWarningToast(
+        'لا توجد حجوزات أو مباريات نشطة. يرجى إنشاء مباراة أولاً ⚽',
+      );
+      return;
+    }
+
+    if (matches.length == 1) {
+      context.push('/team-generator', extra: matches.first);
+      return;
+    }
+
+    SelectMatchForLineupSheet.show(
+      context,
+      matches: matches,
+      onSelectMatch: (selectedMatch) {
+        context.push('/team-generator', extra: selectedMatch);
+      },
+    );
+  }
+
+  Widget _buildAdminToolItem({
+    required BuildContext context,
+    required IconData icon,
+    required String label,
+    required Color accentColor,
+    required VoidCallback onTap,
+    required bool isDark,
+  }) {
+    final cs = context.colorScheme;
+    return Expanded(
+      child: KickoffPressable(
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(15),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+              decoration: BoxDecoration(
+                color: cs.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(15),
+                border: Border.all(color: cs.outlineVariant, width: 1.0),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: accentColor.withValues(alpha: isDark ? 0.16 : 0.11),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      icon,
+                      size: 19,
+                      color: accentColor,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: cs.onSurface,
+                      ),
+                      maxLines: 1,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUserAvatar(UserEntity? user, String userName, bool isDark) {
+    return KickoffAvatar(
+      photoUrl: user?.photoUrl,
+      name: userName,
+      size: 48,
+      borderWidth: 0,
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import '../../../../core/enums/player_position.dart';
 import '../../../../core/enums/user_role.dart';
+import '../../domain/entities/player_entity.dart';
 import '../../domain/entities/player_skills.dart';
 
 abstract class PlayersEvent extends Equatable {
@@ -55,4 +56,28 @@ class UpdatePlayerSkillsSubmitted extends PlayersEvent {
 
   @override
   List<Object?> get props => [playerId, skills, updaterRole];
+}
+
+/// Admin action to add a new player to the group.
+class AddPlayerSubmitted extends PlayersEvent {
+  final PlayerEntity player;
+
+  const AddPlayerSubmitted(this.player);
+
+  @override
+  List<Object?> get props => [player];
+}
+
+/// Update player avatar or photo URL.
+class UpdatePlayerPhotoRequested extends PlayersEvent {
+  final String playerId;
+  final String photoUrl;
+
+  const UpdatePlayerPhotoRequested({
+    required this.playerId,
+    required this.photoUrl,
+  });
+
+  @override
+  List<Object?> get props => [playerId, photoUrl];
 }

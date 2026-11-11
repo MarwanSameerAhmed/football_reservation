@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -86,7 +87,7 @@ class PushNotificationService {
     try {
       // 1. Initialize local notification plugin for in-app heads-up banner
       const initializationSettingsAndroid = AndroidInitializationSettings(
-        '@mipmap/ic_launcher',
+        '@drawable/ic_notification',
       );
       const initializationSettingsDarwin = DarwinInitializationSettings(
         requestAlertPermission: false,
@@ -168,7 +169,9 @@ class PushNotificationService {
                 _highImportanceChannel.id,
                 _highImportanceChannel.name,
                 channelDescription: _highImportanceChannel.description,
-                icon: '@mipmap/ic_launcher',
+                icon: '@drawable/ic_notification',
+                largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+                color: const Color(0xFF164E3D),
                 importance: Importance.max,
                 priority: Priority.high,
                 playSound: true,

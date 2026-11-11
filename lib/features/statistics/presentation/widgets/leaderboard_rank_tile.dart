@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/enums/statistics_category.dart';
 import '../../../../core/extensions/context_extensions.dart';
+import '../../../../core/presentation/widgets/kickoff_avatar.dart';
 import '../../../../core/presentation/widgets/kickoff_badge.dart';
 import '../../../players/presentation/widgets/player_position_badge.dart';
 import '../../domain/entities/player_stats_entity.dart';
@@ -32,20 +33,21 @@ class LeaderboardRankTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = context.isDarkMode;
 
+    final cs = Theme.of(context).colorScheme;
     final rankColor = switch (rank) {
-      1 => const Color(0xFFEAB308),
+      1 => AppColors.amberText,
       2 => const Color(0xFF94A3B8),
       3 => const Color(0xFFB45309),
-      _ => isDark ? AppColors.textSecondaryLight : AppColors.textSecondaryLight,
+      _ => cs.onSurfaceVariant,
     };
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(16),
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: isDark ? AppColors.borderDark : AppColors.borderLight,
+          color: cs.outlineVariant.withValues(alpha: 0.7),
         ),
       ),
       child: Row(
@@ -57,9 +59,7 @@ class LeaderboardRankTile extends StatelessWidget {
             decoration: BoxDecoration(
               color: rank <= 3
                   ? rankColor.withValues(alpha: 0.15)
-                  : (isDark
-                        ? AppColors.surfaceDarkElevated
-                        : AppColors.canvasLight),
+                  : cs.surfaceContainer,
               shape: BoxShape.circle,
             ),
             child: Center(
@@ -71,6 +71,25 @@ class LeaderboardRankTile extends StatelessWidget {
                 ),
               ),
             ),
+          ),
+          const SizedBox(width: 8),
+
+          // Player Avatar (Photo or Preset)
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: cs.surfaceContainer,
+              border: Border.all(
+                color: rank <= 3
+                    ? rankColor.withValues(alpha: 0.6)
+                    : cs.outlineVariant.withValues(alpha: 0.7),
+                width: 1.2,
+              ),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: _buildTileAvatar(player, isDark),
           ),
           const SizedBox(width: 10),
 
@@ -88,24 +107,27 @@ class LeaderboardRankTile extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 3),
-                Row(
-                  children: [
-                    PlayerPositionBadge(
-                      position: player.position,
-                      showFullLabel: false,
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      PlayerPositionBadge(
+                        position: player.position,
+                        showFullLabel: false,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
                         '${player.matchesPlayed} مباريات • ${player.winRate.toStringAsFixed(0)}% فوز',
                         maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                         style: context.textTheme.labelSmall?.copyWith(
-                          color: AppColors.textSecondaryLight,
+                          color: cs.onSurfaceVariant,
+                          fontSize: 10.5,
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -116,6 +138,15 @@ class LeaderboardRankTile extends StatelessWidget {
           KickoffBadge(label: _formatMetric(), variant: BadgeVariant.success),
         ],
       ),
+    );
+  }
+
+  Widget _buildTileAvatar(PlayerStatsEntity player, bool isDark) {
+    return KickoffAvatar(
+      photoUrl: player.photoUrl,
+      name: player.playerName,
+      size: 36,
+      borderWidth: 0,
     );
   }
 }

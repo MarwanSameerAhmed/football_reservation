@@ -211,4 +211,50 @@ class FirebaseNotificationSenderService {
       data: {'type': 'announcement'},
     );
   }
+
+  /// ⚠️ إشعار اعتذار وانسحاب لاعب من المباراة إلى الكابتن
+  Future<bool> sendPlayerWithdrawalNotification({
+    required String playerName,
+    required String matchTitle,
+    required String reason,
+    String? customNote,
+  }) async {
+    final note = customNote != null && customNote.isNotEmpty ? ' ($customNote)' : '';
+    return sendNotification(
+      topic: 'kickoff_all',
+      title: 'اعتذار لاعب عن المباراة ⚠️',
+      body: 'اعتذر اللاعب $playerName عن حضور $matchTitle.\nالسبب: $reason$note',
+      data: {'type': 'withdrawal'},
+    );
+  }
+
+  /// 🏆 إشعار رسمي بصدور وتثبيت نتائج المباراة والفريق الفائز
+  Future<bool> sendMatchResultsPublishedNotification({
+    required String matchTitle,
+    required String winningTeam,
+    required String? motmName,
+  }) async {
+    final motmPart = motmName != null && motmName.isNotEmpty
+        ? ' • رجل المباراة: $motmName ⭐'
+        : '';
+    return sendNotification(
+      topic: 'kickoff_all',
+      title: '🏆 صدرت نتيجة المباراة رسمياً!',
+      body: 'تهانينا لـ $winningTeam بالصدارة في $matchTitle$motmPart',
+      data: {'type': 'match_result'},
+    );
+  }
+
+  /// ⏰ إشعار تذكيري قبل فتح حجز مقاعد المباراة بـ 5 دقائق
+  Future<bool> sendRegistrationOpeningSoonReminder({
+    required String matchTitle,
+    required String timeStr,
+  }) async {
+    return sendNotification(
+      topic: 'kickoff_all',
+      title: '⏰ استعد! يفتح حجز المباراة بعد 5 دقائق',
+      body: 'سيتم فتح حجز مقاعد $matchTitle في تمام $timeStr. كن أول الحاجزين! ⚽',
+      data: {'type': 'registration_reminder'},
+    );
+  }
 }

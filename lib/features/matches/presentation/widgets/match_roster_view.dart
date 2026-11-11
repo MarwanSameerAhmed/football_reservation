@@ -1,26 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../app/theme/app_colors.dart';
-import '../../../../core/constants/app_constants.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/presentation/widgets/kickoff_widgets.dart';
 import '../../../players/presentation/widgets/player_position_badge.dart';
 import '../../domain/entities/match_entity.dart';
+import '../bloc/matches_bloc.dart';
+import '../bloc/matches_event.dart';
 
 class MatchRosterView extends StatelessWidget {
   final MatchEntity match;
   final String? currentUserId;
+  final bool isAdmin;
   final VoidCallback? onCancelMyRegistration;
 
   const MatchRosterView({
     super.key,
     required this.match,
     this.currentUserId,
+    this.isAdmin = false,
     this.onCancelMyRegistration,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = context.isDarkMode;
+    final cs = context.colorScheme;
+    final accent = isDark ? AppColors.turfGreenNeon : AppColors.primaryEmerald;
+    final warningColor = isDark ? AppColors.amberNeon : AppColors.amberText;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -32,7 +39,8 @@ class MatchRosterView extends StatelessWidget {
             Text(
               'التشكيلة الأساسية المؤكدة (${match.confirmedPlayers.length}/${match.maxPlayers})',
               style: context.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
+                color: cs.onSurface,
+                fontWeight: FontWeight.w800,
               ),
             ),
             KickoffBadge(
@@ -49,8 +57,9 @@ class MatchRosterView extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-              borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
+              color: cs.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: cs.outlineVariant),
             ),
             child: const Center(
               child: Text('لم يسجل أي لاعب في التشكيلة الأساسية بعد.'),
@@ -68,12 +77,10 @@ class MatchRosterView extends StatelessWidget {
                 vertical: 10.0,
               ),
               decoration: BoxDecoration(
-                color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-                borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
+                color: cs.surface,
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isMe
-                      ? (isDark ? AppColors.turfGreenNeon : AppColors.turfGreen)
-                      : (isDark ? AppColors.borderDark : AppColors.borderLight),
+                  color: isMe ? accent : cs.outlineVariant,
                   width: isMe ? 1.5 : 1.0,
                 ),
               ),
@@ -83,10 +90,8 @@ class MatchRosterView extends StatelessWidget {
                     width: 28,
                     height: 28,
                     decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isDark
-                          ? AppColors.surfaceDarkElevated
-                          : AppColors.canvasLight,
+                      borderRadius: BorderRadius.circular(9),
+                      color: cs.surfaceContainer,
                     ),
                     child: Center(
                       child: Text(
@@ -122,7 +127,42 @@ class MatchRosterView extends StatelessWidget {
                     ),
                   ),
                   PlayerPositionBadge(position: reg.playerPosition),
-                  if (isMe && onCancelMyRegistration != null) ...[
+                  if (isAdmin) ...[
+                    // Demote to waiting list
+                    IconButton(
+                      icon: const Icon(
+                        Icons.arrow_downward_rounded,
+                        size: 19,
+                        color: Colors.orange,
+                      ),
+                      tooltip: 'إنزال لقائمة الانتظار',
+                      onPressed: () {
+                        context.read<MatchesBloc>().add(
+                          DemotePlayerToWaitlistRequested(
+                            matchId: match.id,
+                            playerId: reg.playerId,
+                          ),
+                        );
+                      },
+                    ),
+                    // Remove/Delete player from match
+                    IconButton(
+                      icon: const Icon(
+                        Icons.delete_outline_rounded,
+                        size: 19,
+                        color: AppColors.redText,
+                      ),
+                      tooltip: 'حذف اللاعب من الحجز',
+                      onPressed: () {
+                        context.read<MatchesBloc>().add(
+                          CancelRegistrationRequested(
+                            matchId: match.id,
+                            playerId: reg.playerId,
+                          ),
+                        );
+                      },
+                    ),
+                  ] else if (isMe && onCancelMyRegistration != null) ...[
                     const SizedBox(width: 8),
                     IconButton(
                       icon: const Icon(
@@ -163,8 +203,9 @@ class MatchRosterView extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-              borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
+              color: cs.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: cs.outlineVariant),
             ),
             child: const Center(child: Text('قائمة الانتظار فارغة حالياً.')),
           )
@@ -180,12 +221,10 @@ class MatchRosterView extends StatelessWidget {
                 vertical: 10.0,
               ),
               decoration: BoxDecoration(
-                color: isDark
-                    ? const Color(0xFF241C12)
-                    : AppColors.amberTint.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
+                color: warningColor.withValues(alpha: isDark ? 0.12 : 0.08),
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isDark ? const Color(0xFF422E18) : AppColors.amberTint,
+                  color: warningColor.withValues(alpha: 0.30),
                 ),
               ),
               child: Row(
@@ -196,15 +235,15 @@ class MatchRosterView extends StatelessWidget {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.amberText.withValues(alpha: 0.2),
+                      color: warningColor.withValues(alpha: 0.18),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
                       '#${reg.queuePosition ?? (index + 1)}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.amberText,
+                        color: warningColor,
                       ),
                     ),
                   ),
@@ -220,7 +259,42 @@ class MatchRosterView extends StatelessWidget {
                     ),
                   ),
                   PlayerPositionBadge(position: reg.playerPosition),
-                  if (isMe && onCancelMyRegistration != null) ...[
+                  if (isAdmin) ...[
+                    // Promote to confirmed squad
+                    IconButton(
+                      icon: const Icon(
+                        Icons.arrow_upward_rounded,
+                        size: 19,
+                        color: AppColors.turfGreen,
+                      ),
+                      tooltip: 'ترقية للتشكيلة الأساسية',
+                      onPressed: () {
+                        context.read<MatchesBloc>().add(
+                          PromotePlayerToConfirmedRequested(
+                            matchId: match.id,
+                            playerId: reg.playerId,
+                          ),
+                        );
+                      },
+                    ),
+                    // Remove from waiting list
+                    IconButton(
+                      icon: const Icon(
+                        Icons.delete_outline_rounded,
+                        size: 19,
+                        color: AppColors.redText,
+                      ),
+                      tooltip: 'حذف من قائمة الانتظار',
+                      onPressed: () {
+                        context.read<MatchesBloc>().add(
+                          CancelRegistrationRequested(
+                            matchId: match.id,
+                            playerId: reg.playerId,
+                          ),
+                        );
+                      },
+                    ),
+                  ] else if (isMe && onCancelMyRegistration != null) ...[
                     const SizedBox(width: 8),
                     IconButton(
                       icon: const Icon(

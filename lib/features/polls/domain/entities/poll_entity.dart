@@ -6,6 +6,7 @@ import 'poll_option_entity.dart';
 class PollEntity extends Equatable {
   final String id;
   final String? matchId;
+  final String? matchDetails;
   final String title;
   final String? description;
   final PollType type;
@@ -14,11 +15,13 @@ class PollEntity extends Equatable {
   final bool allowMultipleVotes;
   final DateTime closesAt;
   final bool isClosed;
+  final bool isLockedUntilMatchEnds;
   final DateTime createdAt;
 
   const PollEntity({
     required this.id,
     this.matchId,
+    this.matchDetails,
     required this.title,
     this.description,
     required this.type,
@@ -27,6 +30,7 @@ class PollEntity extends Equatable {
     this.allowMultipleVotes = false,
     required this.closesAt,
     this.isClosed = false,
+    this.isLockedUntilMatchEnds = false,
     required this.createdAt,
   });
 
@@ -36,8 +40,8 @@ class PollEntity extends Equatable {
   /// Whether the deadline has passed.
   bool get hasExpired => DateTime.now().isAfter(closesAt);
 
-  /// A poll is active if not manually closed and the deadline has not elapsed.
-  bool get isActive => !isClosed && !hasExpired;
+  /// A poll is active if not manually closed, deadline has not elapsed, and not locked waiting for match completion.
+  bool get isActive => !isClosed && !hasExpired && !isLockedUntilMatchEnds;
 
   /// Check if a user has cast at least one vote in this poll.
   bool hasUserVoted(String userId) => options.any((o) => o.hasVoted(userId));
@@ -72,6 +76,7 @@ class PollEntity extends Equatable {
   PollEntity copyWith({
     String? id,
     String? matchId,
+    String? matchDetails,
     String? title,
     String? description,
     PollType? type,
@@ -80,11 +85,13 @@ class PollEntity extends Equatable {
     bool? allowMultipleVotes,
     DateTime? closesAt,
     bool? isClosed,
+    bool? isLockedUntilMatchEnds,
     DateTime? createdAt,
   }) {
     return PollEntity(
       id: id ?? this.id,
       matchId: matchId ?? this.matchId,
+      matchDetails: matchDetails ?? this.matchDetails,
       title: title ?? this.title,
       description: description ?? this.description,
       type: type ?? this.type,
@@ -93,6 +100,8 @@ class PollEntity extends Equatable {
       allowMultipleVotes: allowMultipleVotes ?? this.allowMultipleVotes,
       closesAt: closesAt ?? this.closesAt,
       isClosed: isClosed ?? this.isClosed,
+      isLockedUntilMatchEnds:
+          isLockedUntilMatchEnds ?? this.isLockedUntilMatchEnds,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -101,6 +110,7 @@ class PollEntity extends Equatable {
   List<Object?> get props => [
     id,
     matchId,
+    matchDetails,
     title,
     description,
     type,
@@ -109,6 +119,7 @@ class PollEntity extends Equatable {
     allowMultipleVotes,
     closesAt,
     isClosed,
+    isLockedUntilMatchEnds,
     createdAt,
   ];
 }

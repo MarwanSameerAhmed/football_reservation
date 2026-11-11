@@ -18,10 +18,13 @@ class PlayerSkillsBreakdown extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18.0),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(AppConstants.radiusLarge),
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: isDark ? AppColors.borderDark : AppColors.borderLight,
+          color: Theme.of(context)
+              .colorScheme
+              .outlineVariant
+              .withValues(alpha: 0.7),
         ),
       ),
       child: Column(
@@ -102,15 +105,15 @@ class PlayerSkillsBreakdown extends StatelessWidget {
 
     Color progressColor;
     if (value >= 85) {
-      progressColor = isDark ? AppColors.turfGreenNeon : AppColors.turfGreen;
+      progressColor =
+          isDark ? AppColors.turfGreenNeon : AppColors.primaryEmerald;
     } else if (value >= 70) {
-      progressColor = isDark
-          ? const Color(0xFF6EE7B7)
-          : const Color(0xFF10B981);
+      progressColor =
+          isDark ? AppColors.turfGreenNeon : AppColors.blueAccent;
     } else if (value >= 60) {
-      progressColor = const Color(0xFFF59E0B);
+      progressColor = AppColors.amberText;
     } else {
-      progressColor = const Color(0xFFEF4444);
+      progressColor = AppColors.redText;
     }
 
     return Column(

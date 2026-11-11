@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../constants/app_constants.dart';
 import '../../extensions/context_extensions.dart';
+import '../../motion/kickoff_motion.dart';
 
-/// Standard container card matching the reference design.
+/// Executive Squircle container card adhering to M3 Surface Hierarchy.
 ///
-/// Features smooth `24px` rounded corners, zero harsh shadows,
-/// and consistent theming across light and dark modes.
+/// Features crisp `1px` `outlineVariant` hairline borders, `20px` default
+/// squircle corners, zero harsh elevation, and tactile micro-scale when tappable.
 class KickoffCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
@@ -23,7 +23,7 @@ class KickoffCard extends StatelessWidget {
     this.onTap,
     this.backgroundColor,
     this.border,
-    this.borderRadius = AppConstants.radiusLarge,
+    this.borderRadius = 20.0,
     this.width,
     this.height,
   });
@@ -47,21 +47,20 @@ class KickoffCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(borderRadius),
         border:
             border ??
-            Border.all(
-              color: context.colorScheme.outline.withValues(alpha: 0.5),
-              width: 1,
-            ),
+            Border.all(color: context.colorScheme.outlineVariant, width: 1),
       ),
       child: child,
     );
 
     if (onTap != null) {
-      return Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(borderRadius),
-          child: cardContent,
+      return KickoffPressable(
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(borderRadius),
+            child: cardContent,
+          ),
         ),
       );
     }

@@ -18,6 +18,7 @@ class PlayerEntity extends Equatable {
   final int matchesPlayed;
   final int goals;
   final int assists;
+  final int motmCount;
   final bool isAvailable;
   final DateTime createdAt;
 
@@ -35,6 +36,7 @@ class PlayerEntity extends Equatable {
     this.matchesPlayed = 0,
     this.goals = 0,
     this.assists = 0,
+    this.motmCount = 0,
     this.isAvailable = true,
     required this.createdAt,
   });
@@ -55,6 +57,7 @@ class PlayerEntity extends Equatable {
     int? matchesPlayed,
     int? goals,
     int? assists,
+    int? motmCount,
     bool? isAvailable,
     DateTime? createdAt,
   }) {
@@ -72,6 +75,7 @@ class PlayerEntity extends Equatable {
       matchesPlayed: matchesPlayed ?? this.matchesPlayed,
       goals: goals ?? this.goals,
       assists: assists ?? this.assists,
+      motmCount: motmCount ?? this.motmCount,
       isAvailable: isAvailable ?? this.isAvailable,
       createdAt: createdAt ?? this.createdAt,
     );
@@ -92,6 +96,7 @@ class PlayerEntity extends Equatable {
     matchesPlayed,
     goals,
     assists,
+    motmCount,
     isAvailable,
     createdAt,
   ];

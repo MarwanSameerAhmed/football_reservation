@@ -7,6 +7,8 @@ class GeneratedTeamModel extends GeneratedTeamEntity {
     required super.name,
     required super.bibColor,
     required super.players,
+    super.captainPlayerId,
+    super.goalkeeperRotation = const [],
   });
 
   factory GeneratedTeamModel.fromJson(Map<String, dynamic> json) {
@@ -15,11 +17,16 @@ class GeneratedTeamModel extends GeneratedTeamEntity {
         .map((p) => PlayerModel.fromJson(p as Map<String, dynamic>))
         .toList();
 
+    final rawRotation = json['goalkeeperRotation'] as List<dynamic>? ?? [];
+    final rotationList = rawRotation.map((e) => e.toString()).toList();
+
     return GeneratedTeamModel(
       id: json['id'] as String? ?? '',
       name: json['name'] as String? ?? '',
       bibColor: json['bibColor'] as String? ?? 'أخضر عشبي',
       players: playersList,
+      captainPlayerId: json['captainPlayerId'] as String?,
+      goalkeeperRotation: rotationList,
     );
   }
 
@@ -31,6 +38,8 @@ class GeneratedTeamModel extends GeneratedTeamEntity {
       'players': players
           .map((p) => PlayerModel.fromEntity(p).toJson())
           .toList(),
+      'captainPlayerId': captainPlayerId,
+      'goalkeeperRotation': goalkeeperRotation,
     };
   }
 
@@ -40,6 +49,8 @@ class GeneratedTeamModel extends GeneratedTeamEntity {
       name: entity.name,
       bibColor: entity.bibColor,
       players: entity.players,
+      captainPlayerId: entity.captainPlayerId,
+      goalkeeperRotation: entity.goalkeeperRotation,
     );
   }
 }

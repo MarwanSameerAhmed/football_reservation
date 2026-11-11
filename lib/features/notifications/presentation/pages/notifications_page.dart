@@ -39,6 +39,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      useRootNavigator: true,
       backgroundColor: context.isDarkMode
           ? AppColors.surfaceDark
           : AppColors.surfaceLight,
@@ -173,18 +174,15 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
                                   if (context.mounted) {
                                     Navigator.of(dialogContext).pop();
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          success
-                                              ? 'تم إرسال الإشعار لجميع الأجهزة بنجاح 🚀'
-                                              : 'تعذر إرسال الإشعار، تحقق من الاتصال بالإنترنت',
-                                        ),
-                                        backgroundColor: success
-                                            ? AppColors.turfGreen
-                                            : AppColors.redText,
-                                      ),
-                                    );
+                                    if (success) {
+                                      context.showSuccessToast(
+                                        'تم إرسال الإشعار لجميع الأجهزة بنجاح 🚀',
+                                      );
+                                    } else {
+                                      context.showErrorToast(
+                                        'تعذر إرسال الإشعار، تحقق من الاتصال بالإنترنت',
+                                      );
+                                    }
                                   }
                                 }
                               },

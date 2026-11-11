@@ -21,6 +21,9 @@ abstract class MatchRepository {
   Future<Result<MatchEntity>> cancelRegistration({
     required String matchId,
     required String playerId,
+    String? playerName,
+    String? reason,
+    String? customNote,
   });
 
   Future<Result<MatchResultEntity>> recordMatchResult(MatchResultEntity result);

@@ -8,8 +8,10 @@ class MatchResultEntity extends Equatable {
   final String matchId;
   final int teamAScore;
   final int teamBScore;
+  final int? teamCScore;
   final String teamAName;
   final String teamBName;
+  final String? teamCName;
   final List<GoalEventEntity> goals;
   final List<CardEventEntity> cards;
   final String? manOfTheMatchPlayerId;
@@ -23,8 +25,10 @@ class MatchResultEntity extends Equatable {
     required this.matchId,
     required this.teamAScore,
     required this.teamBScore,
+    this.teamCScore,
     this.teamAName = 'الفريق الأول (الأخضر)',
     this.teamBName = 'الفريق الثاني (الأبيض)',
+    this.teamCName = 'الفريق الثالث (الأسود)',
     this.goals = const [],
     this.cards = const [],
     this.manOfTheMatchPlayerId,
@@ -34,11 +38,17 @@ class MatchResultEntity extends Equatable {
     this.notes,
   });
 
-  bool get isDraw => teamAScore == teamBScore;
+  bool get isDraw => teamAScore == teamBScore && (teamCScore == null || teamCScore == teamAScore);
 
-  int get totalGoals => teamAScore + teamBScore;
+  int get totalGoals => teamAScore + teamBScore + (teamCScore ?? 0);
 
   String get winnerTeamName {
+    if (teamCScore != null) {
+      if (teamAScore > teamBScore && teamAScore > teamCScore!) return teamAName;
+      if (teamBScore > teamAScore && teamBScore > teamCScore!) return teamBName;
+      if (teamCScore! > teamAScore && teamCScore! > teamBScore) return teamCName ?? 'الفريق الثالث (الأسود)';
+      return 'تعادل بين الفرق';
+    }
     if (teamAScore > teamBScore) return teamAName;
     if (teamBScore > teamAScore) return teamBName;
     return 'تعادل';
@@ -49,8 +59,10 @@ class MatchResultEntity extends Equatable {
     String? matchId,
     int? teamAScore,
     int? teamBScore,
+    int? teamCScore,
     String? teamAName,
     String? teamBName,
+    String? teamCName,
     List<GoalEventEntity>? goals,
     List<CardEventEntity>? cards,
     String? manOfTheMatchPlayerId,
@@ -64,8 +76,10 @@ class MatchResultEntity extends Equatable {
       matchId: matchId ?? this.matchId,
       teamAScore: teamAScore ?? this.teamAScore,
       teamBScore: teamBScore ?? this.teamBScore,
+      teamCScore: teamCScore ?? this.teamCScore,
       teamAName: teamAName ?? this.teamAName,
       teamBName: teamBName ?? this.teamBName,
+      teamCName: teamCName ?? this.teamCName,
       goals: goals ?? this.goals,
       cards: cards ?? this.cards,
       manOfTheMatchPlayerId:
@@ -83,8 +97,10 @@ class MatchResultEntity extends Equatable {
     matchId,
     teamAScore,
     teamBScore,
+    teamCScore,
     teamAName,
     teamBName,
+    teamCName,
     goals,
     cards,
     manOfTheMatchPlayerId,

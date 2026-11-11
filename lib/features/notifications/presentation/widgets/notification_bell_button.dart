@@ -7,11 +7,17 @@ import '../bloc/notifications_bloc.dart';
 import '../bloc/notifications_state.dart';
 
 class NotificationBellButton extends StatelessWidget {
-  const NotificationBellButton({super.key});
+  final double size;
+
+  const NotificationBellButton({
+    super.key,
+    this.size = 44.0,
+  });
 
   @override
   Widget build(BuildContext context) {
     final isDark = context.isDarkMode;
+    final defaultBg = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
 
     return BlocBuilder<NotificationsBloc, NotificationsState>(
       builder: (context, state) {
@@ -19,48 +25,75 @@ class NotificationBellButton extends StatelessWidget {
             ? state.unreadCount
             : 0;
 
-        return Stack(
-          alignment: Alignment.center,
-          children: [
-            IconButton(
-              icon: Icon(
-                unreadCount > 0
-                    ? Icons.notifications_active_rounded
-                    : Icons.notifications_none_rounded,
-                color: isDark ? Colors.white : AppColors.darkSlate,
+        return Tooltip(
+          message: 'التنبيهات',
+          child: Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: defaultBg,
+              border: Border.all(
+                color: isDark ? AppColors.borderDark : AppColors.borderLight,
+                width: 1.0,
               ),
-              tooltip: 'التنبيهات',
-              onPressed: () => context.push('/notifications'),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            if (unreadCount > 0)
-              Positioned(
-                top: 8,
-                right: context.isRtl ? null : 8,
-                left: context.isRtl ? 8 : null,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(
-                    color: AppColors.turfGreen,
-                    shape: BoxShape.circle,
-                  ),
-                  constraints: const BoxConstraints(
-                    minWidth: 16,
-                    minHeight: 16,
-                  ),
-                  child: Center(
-                    child: Text(
-                      '$unreadCount',
-                      style: const TextStyle(
-                        color: AppColors.darkSlate,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        height: 1.0,
-                      ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => context.push('/notifications'),
+                customBorder: const CircleBorder(),
+                child: Stack(
+                  alignment: Alignment.center,
+                  clipBehavior: Clip.none,
+                  children: [
+                    Icon(
+                      unreadCount > 0
+                          ? Icons.notifications_active_rounded
+                          : Icons.notifications_none_rounded,
+                      color: isDark ? Colors.white : AppColors.darkSlate,
+                      size: size * 0.5,
                     ),
-                  ),
+                    if (unreadCount > 0)
+                      Positioned(
+                        top: 4,
+                        left: context.isRtl ? 4 : null,
+                        right: context.isRtl ? null : 4,
+                        child: Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: const BoxDecoration(
+                            color: AppColors.turfGreen,
+                            shape: BoxShape.circle,
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 16,
+                            minHeight: 16,
+                          ),
+                          child: Center(
+                            child: Text(
+                              '$unreadCount',
+                              style: const TextStyle(
+                                color: AppColors.darkSlate,
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.bold,
+                                height: 1.0,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
-          ],
+            ),
+          ),
         );
       },
     );

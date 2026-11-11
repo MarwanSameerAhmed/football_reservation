@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import '../../../../core/enums/match_status.dart';
 import 'match_registration_entity.dart';
 import 'match_result_entity.dart';
+import 'player_withdrawal_entity.dart';
 
 class MatchEntity extends Equatable {
   final String id;
@@ -16,7 +17,11 @@ class MatchEntity extends Equatable {
   final String pitchDimensions; // e.g. '25 × 40 m'
   final List<MatchRegistrationEntity> confirmedPlayers;
   final List<MatchRegistrationEntity> waitingList;
+  final List<PlayerWithdrawalEntity> withdrawals;
   final MatchResultEntity? result;
+  final bool isRecurringWeekly;
+  final bool isAutoLineupEnabled;
+  final DateTime? registrationOpensAt;
   final DateTime createdAt;
 
   const MatchEntity({
@@ -32,7 +37,11 @@ class MatchEntity extends Equatable {
     this.pitchDimensions = '25 × 40 m',
     this.confirmedPlayers = const [],
     this.waitingList = const [],
+    this.withdrawals = const [],
     this.result,
+    this.isRecurringWeekly = false,
+    this.isAutoLineupEnabled = true,
+    this.registrationOpensAt,
     required this.createdAt,
   });
 
@@ -40,6 +49,36 @@ class MatchEntity extends Equatable {
 
   int get availableSpots =>
       (maxPlayers - confirmedPlayers.length).clamp(0, maxPlayers);
+
+  /// Human-readable Arabic date and time string (e.g. الجمعة 14/11 • 8:30 م).
+  String get formattedDateTime {
+    const days = [
+      'الاثنين',
+      'الثلاثاء',
+      'الأربعاء',
+      'الخميس',
+      'الجمعة',
+      'السبت',
+      'الأحد',
+    ];
+    final dayName = days[(matchDateTime.weekday - 1) % 7];
+    final hour = matchDateTime.hour > 12
+        ? matchDateTime.hour - 12
+        : (matchDateTime.hour == 0 ? 12 : matchDateTime.hour);
+    final minute = matchDateTime.minute.toString().padLeft(2, '0');
+    final period = matchDateTime.hour >= 12 ? 'م' : 'ص';
+    return '$dayName ${matchDateTime.day}/${matchDateTime.month} • $hour:$minute $period';
+  }
+
+  /// Whether booking/registration is currently open or scheduled for a later time.
+  bool get isRegistrationOpen =>
+      registrationOpensAt == null || DateTime.now().isAfter(registrationOpensAt!);
+
+  /// Duration until registration opens, if scheduled in the future.
+  Duration? get timeUntilRegistrationOpens =>
+      registrationOpensAt != null && DateTime.now().isBefore(registrationOpensAt!)
+          ? registrationOpensAt!.difference(DateTime.now())
+          : null;
 
   bool isPlayerRegistered(String playerId) {
     return confirmedPlayers.any((r) => r.playerId == playerId) ||
@@ -69,7 +108,11 @@ class MatchEntity extends Equatable {
     String? pitchDimensions,
     List<MatchRegistrationEntity>? confirmedPlayers,
     List<MatchRegistrationEntity>? waitingList,
+    List<PlayerWithdrawalEntity>? withdrawals,
     MatchResultEntity? result,
+    bool? isRecurringWeekly,
+    bool? isAutoLineupEnabled,
+    DateTime? registrationOpensAt,
     DateTime? createdAt,
   }) {
     return MatchEntity(
@@ -85,7 +128,11 @@ class MatchEntity extends Equatable {
       pitchDimensions: pitchDimensions ?? this.pitchDimensions,
       confirmedPlayers: confirmedPlayers ?? this.confirmedPlayers,
       waitingList: waitingList ?? this.waitingList,
+      withdrawals: withdrawals ?? this.withdrawals,
       result: result ?? this.result,
+      isRecurringWeekly: isRecurringWeekly ?? this.isRecurringWeekly,
+      isAutoLineupEnabled: isAutoLineupEnabled ?? this.isAutoLineupEnabled,
+      registrationOpensAt: registrationOpensAt ?? this.registrationOpensAt,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -104,7 +151,11 @@ class MatchEntity extends Equatable {
     pitchDimensions,
     confirmedPlayers,
     waitingList,
+    withdrawals,
     result,
+    isRecurringWeekly,
+    isAutoLineupEnabled,
+    registrationOpensAt,
     createdAt,
   ];
 }

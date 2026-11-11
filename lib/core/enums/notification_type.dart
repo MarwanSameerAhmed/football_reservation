@@ -10,11 +10,11 @@ enum NotificationType {
   matchResultPublished;
 
   String get labelArabic => switch (this) {
-    NotificationType.matchAnnouncement => 'إعلان مباراة جديدة ⚽',
-    NotificationType.waitingListPromoted => 'ترقية من قائمة الانتظار ⏳',
-    NotificationType.lineupPublished => 'اعتماد تشكيلة الفرق 📋',
-    NotificationType.motmPollStarted => 'تصويت رجل المباراة ⭐',
-    NotificationType.matchResultPublished => 'نتيجة المباراة الرسمية 🏆',
+    NotificationType.matchAnnouncement => 'إعلان مباراة جديدة',
+    NotificationType.waitingListPromoted => 'ترقية من قائمة الانتظار',
+    NotificationType.lineupPublished => 'اعتماد تشكيلة الفرق',
+    NotificationType.motmPollStarted => 'تصويت رجل المباراة ',
+    NotificationType.matchResultPublished => 'نتيجة المباراة الرسمية ',
   };
 
   IconData get icon => switch (this) {

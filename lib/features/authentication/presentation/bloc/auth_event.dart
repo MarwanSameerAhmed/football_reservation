@@ -48,3 +48,26 @@ class AuthSignUpRequested extends AuthEvent {
 class AuthSignOutRequested extends AuthEvent {
   const AuthSignOutRequested();
 }
+
+/// Instant role toggle between Admin (Captain) and Player for seamless testing and clarity.
+class ToggleUserRoleRequested extends AuthEvent {
+  const ToggleUserRoleRequested();
+}
+
+/// Activate invited player session directly from invite link and persist permanently.
+class AuthActivatePlayerRequested extends AuthEvent {
+  final String id;
+  final String displayName;
+  final String phoneNumber;
+  final String? photoUrl;
+
+  const AuthActivatePlayerRequested({
+    required this.id,
+    required this.displayName,
+    required this.phoneNumber,
+    this.photoUrl,
+  });
+
+  @override
+  List<Object?> get props => [id, displayName, phoneNumber, photoUrl];
+}

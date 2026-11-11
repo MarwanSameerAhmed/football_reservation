@@ -11,10 +11,61 @@ import '../entities/team_lineup_entity.dart';
 class TeamBalancer {
   TeamBalancer._();
 
+  /// Thoughtfully selects the team captain based on objective leadership metrics:
+  /// - Matches played (seniority, loyalty, commitment): 2.5 pts per match
+  /// - Man of the Match awards (peer respect & performance): 6.0 pts per MOTM
+  /// - Technical skill rating: 0.15 pts per overall score
+  /// - Goal and assist contributions: 1.0 pt per assist + 0.5 pt per goal
+  static String? selectCaptain(List<PlayerEntity> roster) {
+    if (roster.isEmpty) return null;
+
+    PlayerEntity? bestCandidate;
+    double highestScore = -1.0;
+
+    for (final player in roster) {
+      final leadershipScore =
+          (player.matchesPlayed * 2.5) +
+          (player.motmCount * 6.0) +
+          (player.skills.overallScore * 0.15) +
+          (player.assists * 1.0) +
+          (player.goals * 0.5);
+
+      if (leadershipScore > highestScore) {
+        highestScore = leadershipScore;
+        bestCandidate = player;
+      } else if (leadershipScore == highestScore && bestCandidate != null) {
+        // Deterministic tie-breaker: matches played > overall score > earlier creation
+        if (player.matchesPlayed > bestCandidate.matchesPlayed) {
+          bestCandidate = player;
+        } else if (player.skills.overallScore >
+            bestCandidate.skills.overallScore) {
+          bestCandidate = player;
+        } else if (player.createdAt.isBefore(bestCandidate.createdAt)) {
+          bestCandidate = player;
+        }
+      }
+    }
+
+    return bestCandidate?.id;
+  }
+
+  /// Generates a randomized rotation order for goalkeeping across all team players.
+  /// In friendly amateur football, all players take turns guarding the net ("الكل راح يحرس").
+  static List<String> generateGoalkeeperRotation(
+    List<PlayerEntity> roster, [
+    Random? random,
+  ]) {
+    if (roster.isEmpty) return const [];
+    final rng = random ?? Random();
+    final shuffled = List<PlayerEntity>.from(roster)..shuffle(rng);
+    return shuffled.map((p) => p.id).toList();
+  }
+
   static TeamLineupEntity balance({
     required List<PlayerEntity> players,
     required String matchId,
     int? numberOfTeams,
+    Random? random,
   }) {
     if (players.length < 2) {
       throw ArgumentError(
@@ -192,44 +243,47 @@ class TeamBalancer {
       }
     }
 
-    // Build GeneratedTeamEntity instances
-    final List<GeneratedTeamEntity> generatedTeams;
+    // Build GeneratedTeamEntity instances with thoughtful captain & randomized GK rotation
+    final List<GeneratedTeamEntity> generatedTeams = [];
     if (numTeams == 3) {
-      generatedTeams = [
-        GeneratedTeamEntity(
-          id: 'team_1',
-          name: 'الفريق الأول (الأخضر)',
-          bibColor: 'الأخضر العشبي',
-          players: teamPlayers[0],
-        ),
-        GeneratedTeamEntity(
-          id: 'team_2',
-          name: 'الفريق الثاني (الأبيض)',
-          bibColor: 'الأبيض الناصع',
-          players: teamPlayers[1],
-        ),
-        GeneratedTeamEntity(
-          id: 'team_3',
-          name: 'الفريق الثالث (الأسود)',
-          bibColor: 'الأسود الداكن',
-          players: teamPlayers[2],
-        ),
+      final teamDefs = [
+        ('team_1', 'الفريق الأول (الأخضر)', 'الأخضر العشبي'),
+        ('team_2', 'الفريق الثاني (الأبيض)', 'الأبيض الناصع'),
+        ('team_3', 'الفريق الثالث (الأسود)', 'الأسود الداكن'),
       ];
+      for (int i = 0; i < 3; i++) {
+        final def = teamDefs[i];
+        final squad = teamPlayers[i];
+        generatedTeams.add(
+          GeneratedTeamEntity(
+            id: def.$1,
+            name: def.$2,
+            bibColor: def.$3,
+            players: squad,
+            captainPlayerId: selectCaptain(squad),
+            goalkeeperRotation: generateGoalkeeperRotation(squad, random),
+          ),
+        );
+      }
     } else {
-      generatedTeams = [
-        GeneratedTeamEntity(
-          id: 'team_a',
-          name: 'الفريق (أ)',
-          bibColor: 'الأخضر العشبي',
-          players: teamPlayers[0],
-        ),
-        GeneratedTeamEntity(
-          id: 'team_b',
-          name: 'الفريق (ب)',
-          bibColor: 'الفحم الداكن',
-          players: teamPlayers[1],
-        ),
+      final teamDefs = [
+        ('team_a', 'الفريق (أ)', 'الأخضر العشبي'),
+        ('team_b', 'الفريق (ب)', 'الفحم الداكن'),
       ];
+      for (int i = 0; i < 2; i++) {
+        final def = teamDefs[i];
+        final squad = teamPlayers[i];
+        generatedTeams.add(
+          GeneratedTeamEntity(
+            id: def.$1,
+            name: def.$2,
+            bibColor: def.$3,
+            players: squad,
+            captainPlayerId: selectCaptain(squad),
+            goalkeeperRotation: generateGoalkeeperRotation(squad, random),
+          ),
+        );
+      }
     }
 
     return TeamLineupEntity(
@@ -242,6 +296,7 @@ class TeamBalancer {
   }
 
   /// Manually swap two players between any teams (Admin customization).
+  /// Preserves the goalkeeper rotation slot seamlessly and recalculates team captains.
   static TeamLineupEntity swap({
     required TeamLineupEntity lineup,
     required String playerAId,
@@ -282,9 +337,42 @@ class TeamBalancer {
 
       final newGeneratedTeams = <GeneratedTeamEntity>[];
       for (int i = 0; i < lineup.teams.length; i++) {
-        newGeneratedTeams.add(
-          lineup.teams[i].copyWith(players: updatedTeams[i]),
-        );
+        final currentTeam = lineup.teams[i];
+        final currentRoster = updatedTeams[i];
+
+        if (i == teamIndexA) {
+          final newRotation = List<String>.from(currentTeam.goalkeeperRotation);
+          final rotIdx = newRotation.indexOf(playerAId);
+          if (rotIdx != -1) {
+            newRotation[rotIdx] = playerBId;
+          } else {
+            newRotation.add(playerBId);
+          }
+          newGeneratedTeams.add(
+            currentTeam.copyWith(
+              players: currentRoster,
+              captainPlayerId: selectCaptain(currentRoster),
+              goalkeeperRotation: newRotation,
+            ),
+          );
+        } else if (i == teamIndexB) {
+          final newRotation = List<String>.from(currentTeam.goalkeeperRotation);
+          final rotIdx = newRotation.indexOf(playerBId);
+          if (rotIdx != -1) {
+            newRotation[rotIdx] = playerAId;
+          } else {
+            newRotation.add(playerAId);
+          }
+          newGeneratedTeams.add(
+            currentTeam.copyWith(
+              players: currentRoster,
+              captainPlayerId: selectCaptain(currentRoster),
+              goalkeeperRotation: newRotation,
+            ),
+          );
+        } else {
+          newGeneratedTeams.add(currentTeam);
+        }
       }
 
       return lineup.copyWith(teams: newGeneratedTeams);

@@ -64,11 +64,11 @@ void main() {
     });
 
     test('getPlayers searches accurately by name and nickname', () async {
-      final result = await getPlayersUseCase(searchQuery: 'الحضري');
+      final result = await getPlayersUseCase(searchQuery: 'الدوسري');
       expect(result, isA<Success<List<PlayerEntity>>>());
       final players = (result as Success<List<PlayerEntity>>).data;
       expect(players.length, 1);
-      expect(players.first.name, 'عصام الحضري');
+      expect(players.first.name, 'فهد الدوسري');
     });
 
     test('SECURITY RULE: Admin CAN update player technical skills', () async {

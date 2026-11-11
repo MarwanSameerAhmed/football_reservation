@@ -82,11 +82,17 @@ class MatchRepositoryImpl implements MatchRepository {
   Future<Result<MatchEntity>> cancelRegistration({
     required String matchId,
     required String playerId,
+    String? playerName,
+    String? reason,
+    String? customNote,
   }) async {
     try {
       final updated = await _remoteDataSource.cancelRegistration(
         matchId: matchId,
         playerId: playerId,
+        playerName: playerName,
+        reason: reason,
+        customNote: customNote,
       );
       return Success(updated);
     } on AppException catch (e) {

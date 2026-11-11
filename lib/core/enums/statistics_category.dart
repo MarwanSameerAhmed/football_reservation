@@ -6,10 +6,10 @@ enum StatisticsCategory {
   motm;
 
   String get labelArabic => switch (this) {
-    StatisticsCategory.goals => 'الهدافون ⚽',
-    StatisticsCategory.assists => 'صناع اللعب 🎯',
-    StatisticsCategory.cleanSheets => 'نظافة الشباك 🧤',
-    StatisticsCategory.motm => 'رجل المباراة ⭐',
+    StatisticsCategory.goals => 'الهدافون',
+    StatisticsCategory.assists => 'صناع اللعب',
+    StatisticsCategory.cleanSheets => 'نظافة الشباك',
+    StatisticsCategory.motm => 'رجل المباراة',
   };
 
   String get labelEnglish => switch (this) {

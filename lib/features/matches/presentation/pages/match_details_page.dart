@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/enums/user_role.dart';
@@ -9,13 +10,14 @@ import '../../../../core/presentation/states/app_states.dart';
 import '../../../../core/presentation/widgets/kickoff_widgets.dart';
 import '../../../authentication/presentation/bloc/auth_bloc.dart';
 import '../../../authentication/presentation/bloc/auth_state.dart';
+import '../../domain/entities/player_withdrawal_entity.dart';
 import '../bloc/matches_bloc.dart';
 import '../bloc/matches_event.dart';
 import '../bloc/matches_state.dart';
 import '../widgets/match_result_card.dart';
 import '../widgets/match_roster_view.dart';
 import '../widgets/match_status_badge.dart';
-import '../widgets/record_result_sheet.dart';
+import '../widgets/withdrawal_reason_dialog.dart';
 
 class MatchDetailsPage extends StatefulWidget {
   final String? matchId;
@@ -40,60 +42,17 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = context.isDarkMode;
+    final authState = context.watch<AuthBloc>().state;
+    final isAdmin =
+        authState is Authenticated && authState.user.role == UserRole.admin;
 
     return KickoffResponsiveShell(
       child: BlocConsumer<MatchesBloc, MatchesState>(
         listener: (context, state) {
           if (state is MatchesLoaded && state.successMessage != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                backgroundColor: AppColors.darkSlate,
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                content: Row(
-                  children: [
-                    const Icon(
-                      Icons.check_circle_rounded,
-                      color: AppColors.turfGreen,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        state.successMessage!,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
+            context.showSuccessToast(state.successMessage!);
           } else if (state is MatchesErrorState) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                backgroundColor: AppColors.darkSlate,
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                content: Row(
-                  children: [
-                    const Icon(
-                      Icons.error_outline_rounded,
-                      color: AppColors.redText,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        state.errorMessage,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
+            context.showErrorToast(state.errorMessage);
           }
         },
         builder: (context, state) {
@@ -115,42 +74,28 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
                       ? 'تفاصيل المباراة الأسبوعية'
                       : 'Match Details',
                   actions: [
-                    BlocBuilder<AuthBloc, AuthState>(
-                      builder: (context, authState) {
-                        final isAdmin =
-                            authState is Authenticated &&
-                            authState.user.role == UserRole.admin;
-                        if (!isAdmin) return const SizedBox.shrink();
-
-                        return Padding(
-                          padding: const EdgeInsets.only(left: 8.0),
-                          child: KickoffCircleButton(
-                            icon: Icons.sports_score_rounded,
-                            onPressed: () {
-                              RecordResultSheet.show(
-                                context,
-                                match: match,
-                                onSaveResult: (result) {
-                                  context.read<MatchesBloc>().add(
-                                    RecordMatchResultRequested(result),
-                                  );
-                                },
-                              );
-                            },
-                            size: 40,
-                            tooltip: 'تسجيل النتيجة الرسمية',
-                          ),
-                        );
-                      },
-                    ),
-                    KickoffCircleButton(
-                      icon: Icons.auto_awesome_rounded,
-                      onPressed: () =>
-                          context.push('/team-generator', extra: match),
-                      size: 40,
-                      tooltip: 'توليد الفرق الذكية',
-                    ),
-                    const SizedBox(width: 8),
+                    if (isAdmin) ...[
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8.0),
+                        child: KickoffCircleButton(
+                          icon: Icons.sports_score_rounded,
+                          onPressed: () =>
+                              context.push('/record-result', extra: match),
+                          size: 40,
+                          tooltip: 'تسجيل النتيجة الرسمية',
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8.0),
+                        child: KickoffCircleButton(
+                          icon: Icons.auto_awesome_rounded,
+                          onPressed: () =>
+                              context.push('/team-generator', extra: match),
+                          size: 40,
+                          tooltip: 'توليد الفرق الذكية',
+                        ),
+                      ),
+                    ],
                     KickoffCircleButton(
                       icon: _isFavorite
                           ? Icons.favorite_rounded
@@ -169,24 +114,23 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
                     vertical: 12.0,
                   ),
                   children: [
-                    // Hero Stadium Visual (matching Screen 1)
+                    // Hero Stadium Visual (Executive Formtor Obsidian & Emerald)
                     Stack(
                       children: [
                         ClipRRect(
-                          borderRadius: BorderRadius.circular(
-                            AppConstants.radiusLarge,
-                          ),
+                          borderRadius: BorderRadius.circular(24),
                           child: AspectRatio(
                             aspectRatio: 16 / 10,
                             child: Container(
                               decoration: const BoxDecoration(
                                 gradient: LinearGradient(
                                   colors: [
-                                    Color(0xFF2E4D25),
-                                    Color(0xFF142410),
+                                    Color(0xFF111815),
+                                    Color(0xFF172720),
+                                    Color(0xFF0E1713),
                                   ],
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
                                 ),
                               ),
                               child: Center(
@@ -195,18 +139,17 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
                                   children: [
                                     Icon(
                                       Icons.stadium_rounded,
-                                      size: 64,
-                                      color: Colors.white.withValues(
-                                        alpha: 0.4,
-                                      ),
+                                      size: 62,
+                                      color: AppColors.turfGreenNeon
+                                          .withValues(alpha: 0.45),
                                     ),
-                                    const SizedBox(height: 6),
+                                    const SizedBox(height: 8),
                                     Text(
                                       match.pitchName,
                                       style: const TextStyle(
                                         color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 15,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 16,
                                       ),
                                       textAlign: TextAlign.center,
                                     ),
@@ -375,79 +318,140 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
 
                     const SizedBox(height: 16),
 
-                    // Smart Team Generator CTA Card
-                    KickoffCard(
-                      padding: const EdgeInsets.all(16),
-                      onTap: () =>
-                          context.push('/team-generator', extra: match),
+                    // Smart Team Generator CTA Card (Admin/Captain Only)
+                    if (isAdmin) ...[
+                      KickoffCard(
+                        padding: const EdgeInsets.all(16),
+                        onTap: () =>
+                            context.push('/team-generator', extra: match),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: (isDark
+                                        ? AppColors.indigoNeon
+                                        : AppColors.indigoAccent)
+                                    .withValues(alpha: isDark ? 0.16 : 0.11),
+                                borderRadius: BorderRadius.circular(13),
+                              ),
+                              child: Icon(
+                                Icons.auto_awesome_rounded,
+                                color: isDark
+                                    ? AppColors.indigoNeon
+                                    : AppColors.indigoAccent,
+                                size: 22,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'المولد الذكي للفرق (صلاحيات الكابتن)',
+                                    style: context.textTheme.titleSmall?.copyWith(
+                                      color: context.colorScheme.onSurface,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'توزيع تكتيكي عادل ومتكافئ للقوى والمراكز',
+                                    style: context.textTheme.bodySmall,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(
+                              Icons.chevron_right_rounded,
+                              size: 18,
+                              color: context.colorScheme.outline,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    const SizedBox(height: 24),
+
+                    // Auto Lineup Status Banner
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.all(13),
+                      decoration: BoxDecoration(
+                        color: (isDark
+                                ? AppColors.turfGreenNeon
+                                : AppColors.primaryEmerald)
+                            .withValues(alpha: isDark ? 0.12 : 0.08),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: (isDark
+                                  ? AppColors.turfGreenNeon
+                                  : AppColors.primaryEmerald)
+                              .withValues(alpha: 0.25),
+                        ),
+                      ),
                       child: Row(
                         children: [
-                          Container(
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? AppColors.surfaceDarkElevated
-                                  : AppColors.meadowTint,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.auto_awesome_rounded,
-                              color: AppColors.turfGreenDark,
-                              size: 22,
-                            ),
+                          Icon(
+                            match.isAutoLineupEnabled
+                                ? Icons.auto_awesome_rounded
+                                : Icons.pan_tool_outlined,
+                            color: isDark
+                                ? AppColors.turfGreenNeon
+                                : AppColors.primaryEmerald,
+                            size: 20,
                           ),
-                          const SizedBox(width: 14),
+                          const SizedBox(width: 10),
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'المولد الذكي للفرق',
-                                  style: context.textTheme.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'توزيع تكتيكي عادل ومتكافئ للقوى والمراكز',
-                                  style: context.textTheme.bodySmall,
-                                ),
-                              ],
+                            child: Text(
+                              match.isAutoLineupEnabled
+                                  ? 'توليد الفرق الذكي التلقائي: يتم توزيع الفرق الثلاثة تكتيكياً قبل المباراة بساعة مع إشعار للمشاركين ⏰'
+                                  : 'التوزيع اليدوي مفعل: الكابتن سيقوم باختيار وتوزيع التشكيلات يدوياً ✍️',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: isDark
+                                    ? AppColors.turfGreenNeon
+                                    : AppColors.turfGreenDark,
+                              ),
                             ),
-                          ),
-                          const Icon(
-                            Icons.arrow_forward_ios_rounded,
-                            size: 16,
-                            color: AppColors.textSecondaryLight,
                           ),
                         ],
                       ),
                     ),
 
-                    const SizedBox(height: 24),
-
                     // Confirmed Squad & Waiting List
                     BlocBuilder<AuthBloc, AuthState>(
                       builder: (context, authState) {
-                        final currentUserId = authState is Authenticated
-                            ? authState.user.id
-                            : 'admin_1';
+                        final user = authState is Authenticated ? authState.user : null;
+                        final currentUserId = user?.id ?? 'admin_1';
+                        final currentUserName = user?.displayName ?? 'لاعب';
 
                         return MatchRosterView(
                           match: match,
                           currentUserId: currentUserId,
+                          isAdmin: isAdmin,
                           onCancelMyRegistration: () {
-                            context.read<MatchesBloc>().add(
-                              CancelRegistrationRequested(
-                                matchId: match.id,
-                                playerId: currentUserId,
-                              ),
+                            WithdrawalReasonDialog.show(
+                              context,
+                              match: match,
+                              playerId: currentUserId,
+                              playerName: currentUserName,
                             );
                           },
                         );
                       },
                     ),
+
+                    // Admin & Team Section: Withdrawn Players & Excuses Record
+                    if (match.withdrawals.isNotEmpty) ...[
+                      const SizedBox(height: 24),
+                      _buildWithdrawalsRecord(context, match.withdrawals, isDark),
+                    ],
 
                     const SizedBox(height: 32),
                   ],
@@ -462,9 +466,9 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
                     ),
                     child: BlocBuilder<AuthBloc, AuthState>(
                       builder: (context, authState) {
-                        final currentUserId = authState is Authenticated
-                            ? authState.user.id
-                            : 'admin_1';
+                        final user = authState is Authenticated ? authState.user : null;
+                        final currentUserId = user?.id ?? 'admin_1';
+                        final currentUserName = user?.displayName ?? 'لاعب';
                         final isRegistered = match.isPlayerRegistered(
                           currentUserId,
                         );
@@ -474,18 +478,18 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
                           final isWaiting = reg?.isWaiting ?? false;
                           return KickoffActionButton(
                             label: isWaiting
-                                ? 'أنت في قائمة الانتظار #${reg?.queuePosition ?? 1} (إلغاء)'
-                                : 'أنت مسجل أساسي ⚽ (إلغاء الحضور)',
+                                ? 'أنت في قائمة الانتظار #${reg?.queuePosition ?? 1} (اعتذار)'
+                                : 'أنت مسجل أساسي ⚽ (اعتذار وانسحاب)',
                             circleColor: isWaiting
                                 ? AppColors.amberText
                                 : AppColors.redText,
                             customIcon: Icons.cancel_rounded,
                             onPressed: () {
-                              context.read<MatchesBloc>().add(
-                                CancelRegistrationRequested(
-                                  matchId: match.id,
-                                  playerId: currentUserId,
-                                ),
+                              WithdrawalReasonDialog.show(
+                                context,
+                                match: match,
+                                playerId: currentUserId,
+                                playerName: currentUserName,
                               );
                             },
                           );
@@ -521,6 +525,130 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildWithdrawalsRecord(
+    BuildContext context,
+    List<PlayerWithdrawalEntity> withdrawals,
+    bool isDark,
+  ) {
+    final cs = context.colorScheme;
+    final crimson = isDark ? AppColors.redNeon : AppColors.redText;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: cs.outlineVariant, width: 1.0),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(7),
+                decoration: BoxDecoration(
+                  color: crimson.withValues(alpha: isDark ? 0.16 : 0.10),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.event_busy_rounded,
+                  color: crimson,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 9),
+              Text(
+                'سجل الاعتذارات والمنسحبين (${withdrawals.length})',
+                style: context.textTheme.titleSmall?.copyWith(
+                  color: cs.onSurface,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...withdrawals.map((w) {
+            final timeStr = DateFormat('hh:mm a • d/M', 'ar').format(w.withdrawnAt);
+            return Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(11),
+              decoration: BoxDecoration(
+                color: cs.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: cs.outlineVariant, width: 1.0),
+              ),
+              child: Row(
+                children: [
+                  KickoffAvatar(
+                    photoUrl: null,
+                    name: w.playerName,
+                    size: 34,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          w.playerName,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (w.customNote != null && w.customNote!.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            w.customNote!,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppColors.redText.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          w.reason,
+                          style: const TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.redText,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        timeStr,
+                        style: TextStyle(
+                          fontSize: 9.5,
+                          color: isDark ? Colors.white54 : Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
       ),
     );
   }

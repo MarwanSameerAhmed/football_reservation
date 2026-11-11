@@ -53,7 +53,7 @@ class GroupSummaryCard extends StatelessWidget {
               icon: Icons.trending_up_rounded,
               value: leaderboard.averageGoalsPerMatch.toStringAsFixed(1),
               label: 'معدل أهداف',
-              iconColor: Colors.blueAccent,
+              iconColor: AppColors.blueAccent,
             ),
           ),
         ],
@@ -91,7 +91,7 @@ class GroupSummaryCard extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           textAlign: TextAlign.center,
           style: context.textTheme.labelSmall?.copyWith(
-            color: AppColors.textSecondaryLight,
+            color: context.colorScheme.onSurfaceVariant,
             fontSize: 10,
           ),
         ),

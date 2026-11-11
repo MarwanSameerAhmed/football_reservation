@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../app/theme/app_colors.dart';
-import '../../constants/app_constants.dart';
 import '../../extensions/context_extensions.dart';
+import '../../motion/kickoff_motion.dart';
 import 'kickoff_badge.dart';
 
-/// Horizontal List Card matching the "Court Vibe Check" items in screen 2.
+/// Executive Squircle List Card with tinted icon well and crisp hairline border.
 class KickoffListCard extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -28,104 +28,106 @@ class KickoffListCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = context.isDarkMode;
+    final cs = context.colorScheme;
+    final tint = isDark ? AppColors.turfGreenNeon : AppColors.primaryEmerald;
 
     return Semantics(
       button: onTap != null,
       label: '$title, $subtitle',
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 14.0,
-              vertical: 12.0,
-            ),
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-              borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
-              border: Border.all(
-                color: isDark ? AppColors.borderDark : AppColors.borderLight,
-                width: 1.0,
+      child: KickoffPressable(
+        enabled: onTap != null,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(18),
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 14.0,
+                vertical: 12.0,
               ),
-            ),
-            child: Row(
-              children: [
-                // Leading square thumbnail or player avatar
-                leading ??
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12.0),
-                      child: Container(
-                        width: 52,
-                        height: 52,
-                        color: isDark
-                            ? AppColors.surfaceDarkElevated
-                            : AppColors.canvasLight,
+              decoration: BoxDecoration(
+                color: cs.surface,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: cs.outlineVariant,
+                  width: 1.0,
+                ),
+              ),
+              child: Row(
+                children: [
+                  // Leading squircle thumbnail or player avatar
+                  leading ??
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: tint.withValues(alpha: isDark ? 0.16 : 0.10),
+                          borderRadius: BorderRadius.circular(13),
+                        ),
                         child: Icon(
                           Icons.sports_soccer_rounded,
-                          color: isDark
-                              ? AppColors.turfGreenNeon
-                              : AppColors.turfGreenDark,
-                          size: 26,
+                          color: tint,
+                          size: 24,
                         ),
                       ),
+
+                  const SizedBox(width: 12),
+
+                  // Title and subtitle
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          title,
+                          style: context.textTheme.titleSmall?.copyWith(
+                            color: cs.onSurface,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          subtitle,
+                          style: context.textTheme.bodySmall?.copyWith(
+                            fontSize: 12.0,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ),
+                  ),
 
-                const SizedBox(width: 12),
+                  const SizedBox(width: 8),
 
-                // Title and subtitle
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  // Trailing Badges and extra info
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        title,
-                        style: context.textTheme.titleSmall?.copyWith(
-                          color: isDark
-                              ? AppColors.textPrimaryDark
-                              : AppColors.textPrimaryLight,
-                          fontWeight: FontWeight.bold,
+                      if (badgeLabel != null)
+                        KickoffBadge(
+                          label: badgeLabel!,
+                          variant: badgeVariant,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        subtitle,
-                        style: context.textTheme.bodySmall?.copyWith(
-                          fontSize: 11.5,
+                      if (extraInfo != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          extraInfo!,
+                          style: context.textTheme.bodySmall?.copyWith(
+                            fontSize: 11.0,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                      ],
                     ],
                   ),
-                ),
-
-                const SizedBox(width: 8),
-
-                // Trailing Badges and extra info
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (badgeLabel != null)
-                      KickoffBadge(label: badgeLabel!, variant: badgeVariant),
-                    if (extraInfo != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        extraInfo!,
-                        style: context.textTheme.bodySmall?.copyWith(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
