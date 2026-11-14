@@ -144,9 +144,9 @@ class PushNotificationService {
         debugPrint('FCM Device Token registered: $token');
       });
 
-      // 6. Register current app instance with FCM
+      // 6. Register current app instance with FCM (non-blocking timeout)
       try {
-        await _messaging.register();
+        await _messaging.register().timeout(const Duration(seconds: 8));
       } catch (regError) {
         debugPrint('FCM registration call note: $regError');
       }
@@ -170,8 +170,10 @@ class PushNotificationService {
                 _highImportanceChannel.name,
                 channelDescription: _highImportanceChannel.description,
                 icon: '@drawable/ic_notification',
-                largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
-                color: const Color(0xFF164E3D),
+                largeIcon: const DrawableResourceAndroidBitmap(
+                  '@drawable/ic_notification_large',
+                ),
+                color: const Color(0xFF2563EB),
                 importance: Importance.max,
                 priority: Priority.high,
                 playSound: true,
@@ -203,11 +205,13 @@ class PushNotificationService {
         _notificationOpenedController.add(initialMessage);
       }
 
-      // 10. Automatically subscribe all devices to the group topics
-      await subscribeToTopic('kickoff_all');
-      await subscribeToTopic('match_alerts');
-      await subscribeToTopic('team_alerts');
-      await subscribeToTopic('poll_alerts');
+      // 10. Subscribe to group topics in parallel without stalling initialization
+      await Future.wait([
+        subscribeToTopic('kickoff_all'),
+        subscribeToTopic('match_alerts'),
+        subscribeToTopic('team_alerts'),
+        subscribeToTopic('poll_alerts'),
+      ]).timeout(const Duration(seconds: 10), onTimeout: () => const []);
 
       _isInitialized = true;
     } catch (e) {

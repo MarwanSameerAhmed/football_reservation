@@ -24,14 +24,12 @@ class KickoffTopBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isRtl = context.isRtl;
-
     Widget? leadingWidget = leading;
     if (leadingWidget == null &&
         showBackButton &&
         Navigator.of(context).canPop()) {
       leadingWidget = KickoffCircleButton(
-        icon: isRtl ? Icons.chevron_right_rounded : Icons.chevron_left_rounded,
+        icon: Icons.chevron_left_rounded,
         onPressed: onBack ?? () => Navigator.of(context).pop(),
         size: 40,
         tooltip: 'رجوع',

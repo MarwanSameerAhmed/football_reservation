@@ -161,10 +161,10 @@ class _TeamGeneratorPageState extends State<TeamGeneratorPage> {
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: isDark
-                          ? AppColors.turfGreenNeon
-                          : AppColors.turfGreen,
+                          ? AppColors.darkText
+                          : AppColors.ink,
                       foregroundColor: isDark
-                          ? AppColors.darkSlate
+                          ? AppColors.ink
                           : Colors.white,
                     ),
                     onPressed: () => Navigator.of(context).pop(),

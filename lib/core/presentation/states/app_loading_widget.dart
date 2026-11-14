@@ -19,7 +19,9 @@ class AppLoadingWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final effectiveColor =
         color ??
-        (context.isDarkMode ? AppColors.turfGreenNeon : AppColors.darkSlate);
+        (context.isDarkMode
+            ? AppColors.turfGreenNeon
+            : AppColors.primaryEmerald);
 
     return Center(
       child: Padding(

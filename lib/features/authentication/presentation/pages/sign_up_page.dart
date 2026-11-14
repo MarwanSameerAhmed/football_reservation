@@ -88,8 +88,8 @@ class _SignUpPageState extends State<SignUpPage> {
                     controller: _nameController,
                     label: context.l10n.isArabic ? 'الاسم الكامل' : 'Full Name',
                     hint: context.l10n.isArabic
-                        ? 'مثال: محمد أحمد'
-                        : 'e.g. John Doe',
+                        ? 'أدخل الاسم الكامل'
+                        : 'Enter full name',
                     prefixIcon: Icons.person_outline_rounded,
                     validator: (val) {
                       if (val == null || val.trim().isEmpty) {
@@ -109,7 +109,9 @@ class _SignUpPageState extends State<SignUpPage> {
                     label: context.l10n.isArabic
                         ? 'البريد الإلكتروني'
                         : 'Email Address',
-                    hint: 'player@example.com',
+                    hint: context.l10n.isArabic
+                        ? 'أدخل البريد الإلكتروني'
+                        : 'Enter email address',
                     prefixIcon: Icons.email_outlined,
                     keyboardType: TextInputType.emailAddress,
                     validator: (val) {
@@ -135,7 +137,9 @@ class _SignUpPageState extends State<SignUpPage> {
                     label: context.l10n.isArabic
                         ? 'رقم الهاتف (اختياري)'
                         : 'Phone Number (Optional)',
-                    hint: '+966 5X XXX XXXX',
+                    hint: context.l10n.isArabic
+                        ? 'أدخل رقم الهاتف'
+                        : 'Enter phone number',
                     prefixIcon: Icons.phone_outlined,
                     keyboardType: TextInputType.phone,
                   ),
@@ -146,7 +150,9 @@ class _SignUpPageState extends State<SignUpPage> {
                   AppPasswordField(
                     controller: _passwordController,
                     label: context.l10n.isArabic ? 'كلمة المرور' : 'Password',
-                    hint: '••••••••',
+                    hint: context.l10n.isArabic
+                        ? 'أدخل كلمة المرور'
+                        : 'Enter password',
                     validator: (val) {
                       if (val == null || val.length < 6) {
                         return context.l10n.isArabic

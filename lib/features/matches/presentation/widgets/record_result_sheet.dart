@@ -331,8 +331,8 @@ class _RecordResultSheetState extends State<RecordResultSheet> {
               const SizedBox(width: 10),
               IconButton.filled(
                 style: IconButton.styleFrom(
-                  backgroundColor: AppColors.turfGreen,
-                  foregroundColor: AppColors.darkSlate,
+                  backgroundColor: context.colorScheme.primary,
+                  foregroundColor: context.colorScheme.onPrimary,
                 ),
                 onPressed: _addGoal,
                 icon: const Icon(Icons.add_rounded),

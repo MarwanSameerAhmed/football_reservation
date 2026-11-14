@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'app/app.dart';
@@ -18,21 +19,25 @@ Future<void> main() async {
     debugPrint('Firebase initialization status: $e');
   }
 
-  // Live Firebase toggle: pass --dart-define=USE_FIREBASE=true to connect live to Firestore/Auth
+  // Live Firebase toggle: defaults to true for production launch.
   const bool useFirebaseEnv = bool.fromEnvironment(
     'USE_FIREBASE',
-    defaultValue: false,
+    defaultValue: true,
   );
-  await setupLocator(useFirebase: useFirebaseEnv && firebaseInitialized);
+  // Open with a clean slate (zero demo data) ready for real testing
+  await setupLocator(
+    useFirebase: useFirebaseEnv && firebaseInitialized,
+    seedDemoData: false,
+  );
 
-  // Initialize Push Notification Service (FCM) when Firebase is initialized
-  if (firebaseInitialized) {
-    try {
-      await sl<PushNotificationService>().initialize();
-    } catch (e) {
-      debugPrint('PushNotificationService init note: $e');
-    }
-  }
-
+  // Launch UI immediately without blocking on FCM permission/topic network I/O
   runApp(const KickoffApp());
+
+  if (firebaseInitialized) {
+    unawaited(
+      sl<PushNotificationService>().initialize().catchError((Object e) {
+        debugPrint('PushNotificationService init note: $e');
+      }),
+    );
+  }
 }

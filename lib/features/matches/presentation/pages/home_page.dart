@@ -42,10 +42,20 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  bool _awaitingRoleSwitchFeedback = false;
+
   @override
   void initState() {
     super.initState();
     context.read<MatchesBloc>().add(const LoadMatchesRequested());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (context.read<AuthBloc>().state is Unauthenticated) {
+        try {
+          context.go('/sign-in');
+        } catch (_) {}
+      }
+    });
   }
 
   @override
@@ -55,10 +65,27 @@ class _HomePageState extends State<HomePage> {
     final authState = context.watch<AuthBloc>().state;
     final user = authState is Authenticated ? authState.user : null;
     final isAdmin = user?.role == UserRole.admin;
-    final userId = user?.id ?? 'admin_1';
-    final userName = user?.displayName ?? 'مروان سمير';
+    final userId = user?.id ?? 'guest';
+    final userName = user?.displayName ?? 'مستخدم ضيف';
 
-    return KickoffResponsiveShell(
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is Unauthenticated) {
+          _awaitingRoleSwitchFeedback = false;
+          try {
+            context.go('/sign-in');
+          } catch (_) {}
+        } else if (state is Authenticated && _awaitingRoleSwitchFeedback) {
+          _awaitingRoleSwitchFeedback = false;
+          context.showSuccessToast(
+            state.isAdmin
+                ? 'تم تفعيل وضع الكابتن (صلاحيات كاملة) 👑'
+                : 'تم التبديل لوضع اللاعب العادي ⚽',
+            duration: const Duration(seconds: 2),
+          );
+        }
+      },
+      child: KickoffResponsiveShell(
       child: Scaffold(
         appBar: PreferredSize(
           preferredSize: const Size.fromHeight(80),
@@ -155,94 +182,216 @@ class _HomePageState extends State<HomePage> {
             vertical: 8,
           ),
           children: [
-            // Role Pill & Instant Switcher Bar
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isAdmin
-                        ? (isDark
-                              ? AppColors.turfGreenNeon.withValues(alpha: 0.2)
-                              : AppColors.meadowTint)
-                        : (isDark
-                              ? AppColors.surfaceDarkElevated
-                              : AppColors.canvasLight),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: isAdmin
-                          ? AppColors.turfGreen
-                          : (isDark
-                                ? AppColors.borderDark
-                                : AppColors.borderLight),
-                    ),
-                  ),
-                  child: Text(
-                    isAdmin
-                        ? '👑 مسؤول المجموعة (الكابتن)'
-                        : '⚽ لاعب في المجموعة',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: isAdmin
-                          ? (isDark
-                                ? AppColors.turfGreenNeon
-                                : AppColors.turfGreenDark)
-                          : (isDark
-                                ? AppColors.textSecondaryDark
-                                : AppColors.textSecondaryLight),
-                    ),
-                  ),
+            // Sleek Unified Role & Quick Actions Bar
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurface : AppColors.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isDark ? AppColors.darkBorder : AppColors.border,
                 ),
-                // Quick Switch Role Button for testing & clarity
-                GestureDetector(
-                  onTap: () {
-                    context.read<AuthBloc>().add(
-                      const ToggleUserRoleRequested(),
-                    );
-                    context.showSuccessToast(
-                      isAdmin
-                          ? 'تم التبديل لوضع اللاعب العادي ⚽'
-                          : 'تم تفعيل وضع الكابتن (صلاحيات كاملة) 👑',
-                      duration: const Duration(seconds: 2),
-                    );
-                  },
-                  child: Container(
+              ),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  // Role Badge
+                  Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: isDark
-                          ? AppColors.surfaceDarkElevated
-                          : AppColors.surfaceLight,
+                      color: isAdmin
+                          ? (isDark
+                                ? AppColors.turfGreenNeon.withValues(alpha: 0.16)
+                                : AppColors.meadowTint)
+                          : (isDark
+                                ? AppColors.surfaceDarkElevated
+                                : const Color(0xFFF1F5F9)),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: isDark
-                            ? AppColors.borderDark
-                            : AppColors.borderLight,
+                        color: isAdmin
+                            ? (isDark
+                                  ? AppColors.turfGreenNeon
+                                  : AppColors.turfGreen)
+                            : (isDark
+                                  ? AppColors.darkBorder
+                                  : AppColors.border),
                       ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.swap_horiz_rounded, size: 13),
-                        const SizedBox(width: 3),
-                        Text(
-                          isAdmin ? 'تجربة كـ لاعب' : 'تفعيل الكابتن',
-                          style: const TextStyle(fontSize: 10),
+                        Icon(
+                          isAdmin
+                              ? Icons.workspace_premium_rounded
+                              : Icons.sports_soccer_rounded,
+                          size: 14,
+                          color: isAdmin
+                              ? (isDark
+                                    ? AppColors.turfGreenNeon
+                                    : AppColors.turfGreenDark)
+                              : (isDark
+                                    ? AppColors.darkMuted
+                                    : AppColors.slate),
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            isAdmin
+                                ? 'مسؤول المجموعة (الكابتن)'
+                                : 'لاعب في المجموعة',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: isAdmin
+                                  ? (isDark
+                                        ? AppColors.turfGreenNeon
+                                        : AppColors.turfGreenDark)
+                                  : (isDark
+                                        ? AppColors.darkText
+                                        : AppColors.ink),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ],
                     ),
                   ),
-                ),
-              ],
+
+                  // Actions row: Switch Role (Captain preview only) + Account Menu
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (authState is Authenticated &&
+                          authState.canSwitchRolePreview) ...[
+                        // Role switch pill (only for true Captain accounts)
+                        InkWell(
+                          onTap: () {
+                            _awaitingRoleSwitchFeedback = true;
+                            context.read<AuthBloc>().add(
+                              const ToggleUserRoleRequested(),
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? AppColors.surfaceDarkElevated
+                                  : const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: isDark
+                                    ? AppColors.darkBorder
+                                    : AppColors.border,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.swap_horiz_rounded,
+                                  size: 13,
+                                  color: isDark
+                                      ? AppColors.blueNeon
+                                      : AppColors.blue,
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  isAdmin ? 'تجربة كـ لاعب' : 'تفعيل الكابتن',
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark
+                                        ? AppColors.darkText
+                                        : AppColors.ink,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                      ],
+                      // Actions menu (Sign Out)
+                      PopupMenuButton<String>(
+                        tooltip: 'إجراءات الحساب والجلسة',
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        color: isDark
+                            ? AppColors.darkSurface
+                            : AppColors.surface,
+                        elevation: 4,
+                        padding: EdgeInsets.zero,
+                        child: Container(
+                          padding: const EdgeInsets.all(5),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? AppColors.surfaceDarkElevated
+                                : const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: isDark
+                                  ? AppColors.darkBorder
+                                  : AppColors.border,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.more_horiz_rounded,
+                            size: 15,
+                            color: isDark
+                                ? AppColors.darkMuted
+                                : AppColors.slate,
+                          ),
+                        ),
+                        onSelected: (val) {
+                          if (val == 'logout') {
+                            _confirmSignOut(context);
+                          }
+                        },
+                        itemBuilder: (ctx) => [
+                          PopupMenuItem(
+                            value: 'logout',
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.logout_rounded,
+                                  size: 16,
+                                  color: isDark
+                                      ? AppColors.darkText
+                                      : AppColors.ink,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'تسجيل الخروج',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark
+                                        ? AppColors.darkText
+                                        : AppColors.ink,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
 
             const SizedBox(height: 18),
@@ -411,38 +560,43 @@ class _HomePageState extends State<HomePage> {
                   featuredMatch = state.matches.first;
                 }
 
-                final title = featuredMatch?.title ?? 'مباراة الجمعة الكبرى';
-                final stadium =
-                    (featuredMatch?.pitchName ?? 'ملعب النخبة الدولي')
-                        .replaceAll(RegExp(r'\s*\(.*?\)'), '')
-                        .trim();
-                final location = (featuredMatch?.location ?? 'حي النخيل')
+                if (featuredMatch == null) {
+                  return _buildSectionEmptyCard(
+                    context: context,
+                    icon: Icons.sports_soccer_rounded,
+                    title: 'لا توجد مباريات مجدولة حالياً',
+                    subtitle: isAdmin
+                        ? 'اضغط على حجز مباراة في لوحة الكابتن لإنشاء موعد جديد وفتح التسجيل للمجموعة'
+                        : 'لم يتم فتح تسجيل موعد المباراة القادمة بعد',
+                  );
+                }
+
+                final title = featuredMatch.title;
+                final stadium = featuredMatch.pitchName
+                    .replaceAll(RegExp(r'\s*\(.*?\)'), '')
+                    .trim();
+                final location = featuredMatch.location
                     .split('•')
                     .first
                     .replaceAll(RegExp(r'-.*'), '')
                     .trim();
-                final confirmed = featuredMatch?.confirmedPlayers.length ?? 14;
-                final max = featuredMatch?.maxPlayers ?? 18;
-                final waiting = featuredMatch?.waitingList.length ?? 0;
-                final isUserIn =
-                    featuredMatch?.confirmedPlayers.any(
-                      (p) => p.playerId == userId,
-                    ) ??
-                    false;
+                final confirmed = featuredMatch.confirmedPlayers.length;
+                final max = featuredMatch.maxPlayers;
+                final waiting = featuredMatch.waitingList.length;
+                final isUserIn = featuredMatch.confirmedPlayers.any(
+                  (p) => p.playerId == userId,
+                );
 
-                final dateStr = featuredMatch != null
-                    ? DateFormat(
-                        'EEEE d MMMM',
-                        'ar',
-                      ).format(featuredMatch.matchDateTime)
-                    : 'الجمعة 14 نوفمبر';
-                final timeStr = featuredMatch != null
-                    ? DateFormat(
-                        'hh:mm a',
-                        'ar',
-                      ).format(featuredMatch.matchDateTime)
-                    : '08:30 م';
+                final dateStr = DateFormat(
+                  'EEEE d MMMM',
+                  'ar',
+                ).format(featuredMatch.matchDateTime);
+                final timeStr = DateFormat(
+                  'hh:mm a',
+                  'ar',
+                ).format(featuredMatch.matchDateTime);
 
+                final targetMatch = featuredMatch;
                 return KickoffHeroCard(
                   title: stadium,
                   subtitle: location,
@@ -453,36 +607,28 @@ class _HomePageState extends State<HomePage> {
                   maxPlayers: max,
                   waitingCount: waiting,
                   isUserRegistered: isUserIn,
-                  isRegistrationOpen: featuredMatch?.isRegistrationOpen ?? true,
-                  registrationOpensAt: featuredMatch?.registrationOpensAt,
+                  isRegistrationOpen: targetMatch.isRegistrationOpen,
+                  registrationOpensAt: targetMatch.registrationOpensAt,
                   onTap: () {
-                    if (featuredMatch != null) {
-                      context.push('/match-details', extra: featuredMatch);
-                    } else {
-                      context.push('/match-details');
-                    }
+                    context.push('/match-details', extra: targetMatch);
                   },
                   onRsvpTap: () {
-                    if (featuredMatch != null) {
-                      if (isUserIn) {
-                        WithdrawalReasonDialog.show(
-                          context,
-                          match: featuredMatch,
+                    if (isUserIn) {
+                      WithdrawalReasonDialog.show(
+                        context,
+                        match: targetMatch,
+                        playerId: userId,
+                        playerName: userName,
+                      );
+                    } else {
+                      context.read<MatchesBloc>().add(
+                        RegisterPlayerRequested(
+                          matchId: targetMatch.id,
                           playerId: userId,
                           playerName: userName,
-                        );
-                      } else {
-                        context.read<MatchesBloc>().add(
-                          RegisterPlayerRequested(
-                            matchId: featuredMatch.id,
-                            playerId: userId,
-                            playerName: userName,
-                            position: PlayerPosition.midfielder,
-                          ),
-                        );
-                      }
-                    } else {
-                      context.push('/reserve');
+                          position: PlayerPosition.midfielder,
+                        ),
+                      );
                     }
                   },
                 );
@@ -679,7 +825,14 @@ class _HomePageState extends State<HomePage> {
                     }).toList(),
                   );
                 }
-                return const SizedBox.shrink();
+                return _buildSectionEmptyCard(
+                  context: context,
+                  icon: Icons.calendar_month_rounded,
+                  title: 'جدول المباريات فارغ حالياً',
+                  subtitle: isAdmin
+                      ? 'يمكنك حجز وتثبيت المباريات من لوحة الكابتن لتظهر في هذا الجدول'
+                      : 'ستظهر هنا المواعيد والحجوزات القادمة فور إعلانها',
+                );
               },
             ),
             const SizedBox(height: 18),
@@ -730,7 +883,14 @@ class _HomePageState extends State<HomePage> {
                     },
                   );
                 }
-                return const SizedBox.shrink();
+                return _buildSectionEmptyCard(
+                  context: context,
+                  icon: Icons.how_to_vote_rounded,
+                  title: 'لا توجد استطلاعات نشطة حالياً',
+                  subtitle: isAdmin
+                      ? 'استخدم طرح تصويت من لوحة الكابتن لتحديد الموعد أو اختيار رجل المباراة'
+                      : 'ستظهر هنا استطلاعات الكابتن للتصويت على القرارات والمواعيد',
+                );
               },
             ),
 
@@ -738,6 +898,7 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -837,6 +998,88 @@ class _HomePageState extends State<HomePage> {
       name: userName,
       size: 48,
       borderWidth: 0,
+    );
+  }
+
+  Widget _buildSectionEmptyCard({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
+    final cs = context.colorScheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: cs.outlineVariant, width: 1.0),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: cs.primaryContainer,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              size: 26,
+              color: cs.primary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: cs.onSurface,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 12,
+              color: cs.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmSignOut(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dlgCtx) => AlertDialog(
+        title: const Text('تسجيل الخروج'),
+        content: const Text('هل أنت متأكد من رغبتك في تسجيل الخروج من حسابك؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dlgCtx).pop(),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: context.colorScheme.error,
+              foregroundColor: context.colorScheme.onError,
+              elevation: 0,
+            ),
+            onPressed: () {
+              Navigator.of(dlgCtx).pop();
+              context.read<AuthBloc>().add(const AuthSignOutRequested());
+              context.go('/sign-in');
+            },
+            child: const Text('تسجيل الخروج'),
+          ),
+        ],
+      ),
     );
   }
 }

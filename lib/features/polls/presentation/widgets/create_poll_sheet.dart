@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/enums/poll_type.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/presentation/widgets/app_text_field.dart';
 import '../../../../core/presentation/widgets/kickoff_action_button.dart';
 import '../../../../core/presentation/widgets/kickoff_bottom_sheet_shell.dart';
+import '../../../authentication/presentation/bloc/auth_bloc.dart';
+import '../../../authentication/presentation/bloc/auth_state.dart';
 import '../../domain/entities/poll_entity.dart';
 import '../../domain/entities/poll_option_entity.dart';
 
@@ -20,13 +23,18 @@ class CreatePollSheet extends StatefulWidget {
     String? matchId,
     required ValueChanged<PollEntity> onCreatePoll,
   }) {
+    final authBloc = context.read<AuthBloc?>();
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       useRootNavigator: true,
       backgroundColor: Colors.transparent,
-      builder: (_) =>
-          CreatePollSheet(matchId: matchId, onCreatePoll: onCreatePoll),
+      builder: (_) => MultiBlocProvider(
+        providers: [
+          if (authBloc != null) BlocProvider.value(value: authBloc),
+        ],
+        child: CreatePollSheet(matchId: matchId, onCreatePoll: onCreatePoll),
+      ),
     );
   }
 
@@ -65,41 +73,13 @@ class _CreatePollSheetState extends State<CreatePollSheet> {
     }
     _optionControllers.clear();
 
-    switch (type) {
-      case PollType.matchScheduling:
-        _titleController.text = 'تصويت موعد ومكان المباراة القادمة ⚽';
-        _descriptionController.text =
-            'حدد الموعد والمكان الأنسب لمشاركتك لاعتماد حجز الصالة رسمياً.';
-        _optionControllers.addAll([
-          TextEditingController(text: 'الجمعة 08:00 مساءً - صالة النخبة المغطاة'),
-          TextEditingController(text: 'السبت 07:30 مساءً - صالة أرينا المغطاة'),
-          TextEditingController(text: 'الخميس 09:00 مساءً - ملعب بارك الخارجي'),
-        ]);
-        break;
+    _titleController.clear();
+    _descriptionController.clear();
 
-      case PollType.manOfTheMatch:
-        _titleController.text = 'تصويت رجل المباراة 🌟';
-        _descriptionController.text =
-            'صوت لأفضل لاعب قدم أداءً حاسماً ومميزاً في مواجهة الأسبوع.';
-        _optionControllers.addAll([
-          TextEditingController(text: 'مروان سمير (صانع ألعاب) ⚙️'),
-          TextEditingController(text: 'فهد الدوسري (حارس مرمى) 🧤'),
-          TextEditingController(text: 'عمر الشهري (قلب دفاع) 🛡️'),
-          TextEditingController(text: 'سفيان العلي (مهاجم هداف) 🎯'),
-        ]);
-        break;
-
-      case PollType.general:
-        _titleController.text = 'استطلاع رأي عام للمجموعة 🗳️';
-        _descriptionController.text =
-            'شاركنا رأيك في موضوع المجموعة لتحسين التنظيم والمشاركة.';
-        _optionControllers.addAll([
-          TextEditingController(text: 'موافق تماماً 👍'),
-          TextEditingController(text: 'غير موافق 👎'),
-          TextEditingController(text: 'أقترح خياراً بديلاً 💡'),
-        ]);
-        break;
-    }
+    _optionControllers.addAll([
+      TextEditingController(),
+      TextEditingController(),
+    ]);
   }
 
   void _onTypeChanged(PollType newType) {
@@ -145,6 +125,10 @@ class _CreatePollSheetState extends State<CreatePollSheet> {
       return;
     }
 
+    final authState = context.read<AuthBloc?>()?.state;
+    final creatorId =
+        authState is Authenticated ? authState.user.id : '';
+
     final poll = PollEntity(
       id: 'poll_${DateTime.now().millisecondsSinceEpoch}',
       matchId: widget.matchId,
@@ -154,7 +138,7 @@ class _CreatePollSheetState extends State<CreatePollSheet> {
           : _descriptionController.text.trim(),
       type: _selectedType,
       options: options,
-      creatorId: 'admin_1',
+      creatorId: creatorId,
       allowMultipleVotes: false,
       closesAt: DateTime.now().add(const Duration(days: 3)),
       createdAt: DateTime.now(),
@@ -173,7 +157,7 @@ class _CreatePollSheetState extends State<CreatePollSheet> {
       icon: Icons.how_to_vote_rounded,
       heightFactor: 0.85,
       bottomAction: KickoffActionButton(
-        label: 'نشر الاستطلاع للمجموعة 📋',
+        label: 'نشر الاستطلاع للمجموعة',
         onPressed: _submit,
       ),
       child: Form(
@@ -188,17 +172,18 @@ class _CreatePollSheetState extends State<CreatePollSheet> {
               children: PollType.values.map((type) {
                 final isSelected = type == _selectedType;
                 final cs = Theme.of(context).colorScheme;
-                final activeAccent =
-                    isDark ? AppColors.turfGreenNeon : AppColors.primaryEmerald;
+                final activeAccent = isDark
+                    ? AppColors.turfGreenNeon
+                    : AppColors.primaryEmerald;
                 return ChoiceChip(
                   label: Text(
                     type.labelArabic,
                     style: TextStyle(
                       fontSize: 13,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                      color: isSelected
-                          ? activeAccent
-                          : cs.onSurfaceVariant,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.w500,
+                      color: isSelected ? activeAccent : cs.onSurfaceVariant,
                     ),
                   ),
                   selected: isSelected,
@@ -228,10 +213,10 @@ class _CreatePollSheetState extends State<CreatePollSheet> {
             AppTextField(
               label: 'عنوان الاستطلاع',
               hint: _selectedType == PollType.manOfTheMatch
-                  ? 'مثال: تصويت رجل المباراة'
+                  ? 'أدخل عنوان تصويت رجل المباراة'
                   : (_selectedType == PollType.matchScheduling
-                      ? 'مثال: موعد كلاسيكو الجمعة القادم'
-                      : 'مثال: استطلاع عام لأعضاء الفريق'),
+                        ? 'أدخل عنوان استطلاع الموعد'
+                        : 'أدخل عنوان الاستطلاع'),
               controller: _titleController,
               validator: (v) =>
                   (v == null || v.trim().isEmpty) ? 'العنوان مطلوب' : null,

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../app/theme/app_colors.dart';
 import '../../../../core/enums/player_position.dart';
 import '../../../../core/enums/statistics_category.dart';
 import '../../../../core/enums/user_role.dart';
@@ -57,8 +56,12 @@ class _PlayersListPageState extends State<PlayersListPage> {
       child: Scaffold(
         appBar: KickoffTopBar(
           title: _activeSegment == 0
-              ? (context.l10n.isArabic ? 'قائمة لاعبي المجموعة' : 'Squad Roster')
-              : (context.l10n.isArabic ? 'لوحة صدارة المجموعة' : 'Leaderboard & Stats'),
+              ? (context.l10n.isArabic
+                    ? 'قائمة لاعبي المجموعة'
+                    : 'Squad Roster')
+              : (context.l10n.isArabic
+                    ? 'لوحة صدارة المجموعة'
+                    : 'Leaderboard & Stats'),
           showBackButton: false,
           actions: [
             if (isAdmin && _activeSegment == 0)
@@ -73,9 +76,9 @@ class _PlayersListPageState extends State<PlayersListPage> {
                 icon: Icons.refresh_rounded,
                 tooltip: 'تحديث لوحة الصدارة',
                 size: 40,
-                onPressed: () => context
-                    .read<StatisticsBloc>()
-                    .add(const LoadStatisticsRequested()),
+                onPressed: () => context.read<StatisticsBloc>().add(
+                  const LoadStatisticsRequested(),
+                ),
               ),
           ],
         ),
@@ -105,12 +108,14 @@ class _PlayersListPageState extends State<PlayersListPage> {
       ),
       child: Container(
         height: 46,
-        padding: const EdgeInsets.all(3.5),
+        padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
-          color: cs.surfaceContainer,
+          color: isDark
+              ? cs.surfaceContainerHighest.withValues(alpha: 0.35)
+              : const Color(0xFFF1F5F9),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: cs.outlineVariant,
+            color: cs.outlineVariant.withValues(alpha: 0.7),
             width: 1.0,
           ),
         ),
@@ -119,7 +124,7 @@ class _PlayersListPageState extends State<PlayersListPage> {
             final segmentWidth = constraints.maxWidth / 2;
             return Stack(
               children: [
-                // 1. Smooth Animated Sliding Thumb
+                // 1. Smooth Animated Sliding Thumb (tam_app AppSegmentedTabBar)
                 AnimatedAlign(
                   duration: KickoffMotion.accessible(
                     context,
@@ -135,20 +140,19 @@ class _PlayersListPageState extends State<PlayersListPage> {
                     child: Container(
                       decoration: BoxDecoration(
                         color: cs.surface,
-                        borderRadius: BorderRadius.circular(10.5),
-                        border: Border.all(
-                          color: cs.outlineVariant,
-                          width: 0.8,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(
-                              alpha: isDark ? 0.30 : 0.06,
-                            ),
-                            blurRadius: 6,
-                            offset: const Offset(0, 1.5),
-                          ),
-                        ],
+                        borderRadius: BorderRadius.circular(10),
+                        border: isDark
+                            ? Border.all(color: cs.outlineVariant, width: 0.8)
+                            : null,
+                        boxShadow: isDark
+                            ? null
+                            : [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.05),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ],
                       ),
                     ),
                   ),
@@ -188,9 +192,7 @@ class _PlayersListPageState extends State<PlayersListPage> {
     final isSelected = _activeSegment == index;
     final cs = context.colorScheme;
 
-    final selectedTextColor = isDark
-        ? AppColors.turfGreenNeon
-        : AppColors.primaryEmerald;
+    final selectedTextColor = isDark ? cs.onSurface : cs.primary;
     final unselectedTextColor = cs.onSurfaceVariant;
     final textColor = isSelected ? selectedTextColor : unselectedTextColor;
 
@@ -203,9 +205,9 @@ class _PlayersListPageState extends State<PlayersListPage> {
             if (_activeSegment != index) {
               setState(() => _activeSegment = index);
               if (index == 1) {
-                context
-                    .read<StatisticsBloc>()
-                    .add(const LoadStatisticsRequested());
+                context.read<StatisticsBloc>().add(
+                  const LoadStatisticsRequested(),
+                );
               }
             }
           },
@@ -214,19 +216,16 @@ class _PlayersListPageState extends State<PlayersListPage> {
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  icon,
-                  size: 18,
-                  color: textColor,
-                ),
+                Icon(icon, size: 18, color: textColor),
                 const SizedBox(width: 7),
                 Flexible(
                   child: Text(
                     label,
                     style: TextStyle(
                       fontSize: 13.5,
-                      fontWeight:
-                          isSelected ? FontWeight.w800 : FontWeight.w600,
+                      fontWeight: isSelected
+                          ? FontWeight.w800
+                          : FontWeight.w600,
                       color: textColor,
                       letterSpacing: -0.2,
                     ),
@@ -257,9 +256,7 @@ class _PlayersListPageState extends State<PlayersListPage> {
                 ? 'ابحث بالاسم أو اللقب...'
                 : 'Search player or nickname...',
             onChanged: (val) {
-              context.read<PlayersBloc>().add(
-                    SearchPlayersQueryChanged(val),
-                  );
+              context.read<PlayersBloc>().add(SearchPlayersQueryChanged(val));
             },
             showFilterButton: false,
           ),
@@ -268,8 +265,9 @@ class _PlayersListPageState extends State<PlayersListPage> {
         // Horizontal Position Filter Chips
         BlocBuilder<PlayersBloc, PlayersState>(
           builder: (context, state) {
-            final selectedPosition =
-                state is PlayersLoaded ? state.selectedPosition : null;
+            final selectedPosition = state is PlayersLoaded
+                ? state.selectedPosition
+                : null;
 
             return SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -286,30 +284,30 @@ class _PlayersListPageState extends State<PlayersListPage> {
                       isSelected: selectedPosition == null,
                       onTap: () {
                         context.read<PlayersBloc>().add(
-                              const FilterPlayersByPosition(null),
-                            );
+                          const FilterPlayersByPosition(null),
+                        );
                       },
                     ),
                   ),
                   ...PlayerPosition.values
                       .where((pos) => pos != PlayerPosition.goalkeeper)
                       .map((pos) {
-                    final isSelected = selectedPosition == pos;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 6.0),
-                      child: KickoffChoiceChip(
-                        label: context.l10n.isArabic
-                            ? pos.labelArabic
-                            : pos.labelEnglish,
-                        isSelected: isSelected,
-                        onTap: () {
-                          context.read<PlayersBloc>().add(
+                        final isSelected = selectedPosition == pos;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 6.0),
+                          child: KickoffChoiceChip(
+                            label: context.l10n.isArabic
+                                ? pos.labelArabic
+                                : pos.labelEnglish,
+                            isSelected: isSelected,
+                            onTap: () {
+                              context.read<PlayersBloc>().add(
                                 FilterPlayersByPosition(pos),
                               );
-                        },
-                      ),
-                    );
-                  }),
+                            },
+                          ),
+                        );
+                      }),
                 ],
               ),
             );
@@ -331,23 +329,35 @@ class _PlayersListPageState extends State<PlayersListPage> {
                   message: state.errorMessage,
                   onRetry: () {
                     context.read<PlayersBloc>().add(
-                          const LoadPlayersRequested(),
-                        );
+                      const LoadPlayersRequested(),
+                    );
                   },
                 );
               } else if (state is PlayersEmptyState) {
-                return const AppEmptyStateWidget(
-                  title: 'لا يوجد لاعبون مسجلون',
-                  message: 'لم يتم العثور على أي لاعبين يطابقون خيارات البحث.',
+                return AppEmptyStateWidget(
+                  title: 'لا يوجد لاعبون مسجلون بعد',
+                  message:
+                      'ابدأ بإضافة أول لاعب في مجموعتك لتوليد رابط الدعوة وحساب إحصائياته.',
+                  actionLabel: 'إضافة لاعب للمجموعة',
+                  onAction: () => AddPlayerDialog.show(context),
                 );
               } else if (state is PlayersLoaded) {
                 final players = state.filteredPlayers;
 
                 if (players.isEmpty) {
-                  return const AppEmptyStateWidget(
-                    title: 'لا توجد نتائج',
-                    message:
-                        'لم يتم العثور على أي لاعبين في هذا المركز أو بهذا الاسم.',
+                  return AppEmptyStateWidget(
+                    title: state.allPlayers.isEmpty
+                        ? 'لا يوجد لاعبون مسجلون بعد'
+                        : 'لا توجد نتائج مطابقة',
+                    message: state.allPlayers.isEmpty
+                        ? 'ابدأ بإضافة رفاقك للمجموعة وتحديد مراكزهم وقدمهم المفضلة.'
+                        : 'لم يتم العثور على أي لاعبين في هذا المركز أو بهذا الاسم.',
+                    actionLabel: state.allPlayers.isEmpty
+                        ? 'إضافة لاعب جديد'
+                        : null,
+                    onAction: state.allPlayers.isEmpty
+                        ? () => AddPlayerDialog.show(context)
+                        : null,
                   );
                 }
 
@@ -383,26 +393,29 @@ class _PlayersListPageState extends State<PlayersListPage> {
     return BlocBuilder<StatisticsBloc, StatisticsState>(
       builder: (context, state) {
         if (state is StatisticsLoading || state is StatisticsInitial) {
-          return const AppLoadingWidget(message: 'جاري تحميل لوحة المتصدرين...');
+          return const AppLoadingWidget(
+            message: 'جاري تحميل لوحة المتصدرين...',
+          );
         }
 
         if (state is StatisticsErrorState) {
           return AppErrorWidget(
             message: state.message,
-            onRetry: () => context
-                .read<StatisticsBloc>()
-                .add(const LoadStatisticsRequested()),
+            onRetry: () => context.read<StatisticsBloc>().add(
+              const LoadStatisticsRequested(),
+            ),
           );
         }
 
         if (state is StatisticsEmptyState) {
           return AppEmptyStateWidget(
             title: 'لا تتوفر إحصائيات حتى الآن',
-            message: 'سيتم احتساب الإحصائيات والمتصدرين بمجرد تسجيل نتائج المباريات.',
+            message:
+                'سيتم احتساب الإحصائيات والمتصدرين بمجرد تسجيل نتائج المباريات.',
             actionLabel: 'تحديث',
-            onAction: () => context
-                .read<StatisticsBloc>()
-                .add(const LoadStatisticsRequested()),
+            onAction: () => context.read<StatisticsBloc>().add(
+              const LoadStatisticsRequested(),
+            ),
           );
         }
 
@@ -413,8 +426,9 @@ class _PlayersListPageState extends State<PlayersListPage> {
         final statsState = state;
         final ranked = statsState.rankedPlayers.take(5).toList();
         final topThree = ranked.take(3).toList();
-        final restRanked =
-            ranked.length > 3 ? ranked.skip(3).take(2).toList() : [];
+        final restRanked = ranked.length > 3
+            ? ranked.skip(3).take(2).toList()
+            : [];
 
         return ListView(
           padding: EdgeInsets.symmetric(
@@ -433,21 +447,22 @@ class _PlayersListPageState extends State<PlayersListPage> {
                 children: StatisticsCategory.values
                     .where((c) => c != StatisticsCategory.cleanSheets)
                     .map((cat) {
-                  final isSelected = cat == statsState.selectedCategory;
-                  return Padding(
-                    padding: const EdgeInsets.only(left: 8.0),
-                    child: KickoffChoiceChip(
-                      label: cat.labelArabic,
-                      isSelected: isSelected,
-                      height: 38,
-                      onTap: () {
-                        context
-                            .read<StatisticsBloc>()
-                            .add(CategoryFilterChanged(cat));
-                      },
-                    ),
-                  );
-                }).toList(),
+                      final isSelected = cat == statsState.selectedCategory;
+                      return Padding(
+                        padding: const EdgeInsets.only(left: 8.0),
+                        child: KickoffChoiceChip(
+                          label: cat.labelArabic,
+                          isSelected: isSelected,
+                          height: 38,
+                          onTap: () {
+                            context.read<StatisticsBloc>().add(
+                              CategoryFilterChanged(cat),
+                            );
+                          },
+                        ),
+                      );
+                    })
+                    .toList(),
               ),
             ),
             const SizedBox(height: 16),

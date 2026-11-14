@@ -23,7 +23,7 @@ class AppLocalizations {
   // ── Localized Strings ─────────────────────────────────────────────────────
 
   // General & Navigation
-  String get appName => isArabic ? 'Kickoff' : 'Kickoff';
+  String get appName => isArabic ? 'Formtor' : 'Formtor';
   String get home => isArabic ? 'الرئيسية' : 'Home';
   String get matches => isArabic ? 'المباريات' : 'Matches';
   String get teamGenerator => isArabic ? 'توليد الفرق' : 'Team Generator';

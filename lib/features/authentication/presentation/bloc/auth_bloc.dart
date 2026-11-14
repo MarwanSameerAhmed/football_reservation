@@ -1,7 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/enums/user_role.dart';
 import '../../../../core/services/push_notification_service.dart';
-import '../../domain/entities/user_entity.dart';
 import '../../domain/usecases/get_current_user_usecase.dart';
 import '../../domain/usecases/sign_in_usecase.dart';
 import '../../domain/usecases/sign_out_usecase.dart';
@@ -16,6 +15,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final SignUpUseCase _signUpUseCase;
   final SignOutUseCase _signOutUseCase;
   final PushNotificationService? _pushNotificationService;
+  bool _hasAdminPrivilege = false;
 
   AuthBloc({
     required GetCurrentUserUseCase getCurrentUserUseCase,
@@ -41,13 +41,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     ToggleUserRoleRequested event,
     Emitter<AuthState> emit,
   ) {
-    if (state is Authenticated) {
+    if (state is Authenticated && _hasAdminPrivilege) {
       final currentUser = (state as Authenticated).user;
       final newRole = currentUser.role.isAdmin
           ? UserRole.player
           : UserRole.admin;
       final updatedUser = currentUser.copyWith(role: newRole);
-      emit(Authenticated(updatedUser));
+      emit(Authenticated(updatedUser, canSwitchRolePreview: true));
     }
   }
 
@@ -60,9 +60,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     result.fold(
       onSuccess: (user) {
         if (user != null) {
+          _hasAdminPrivilege = user.role.isAdmin;
           _pushNotificationService?.saveTokenToUser(user.id);
-          emit(Authenticated(user));
+          emit(Authenticated(user, canSwitchRolePreview: _hasAdminPrivilege));
         } else {
+          _hasAdminPrivilege = false;
           emit(const Unauthenticated());
         }
       },
@@ -81,8 +83,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     );
     result.fold(
       onSuccess: (user) {
+        _hasAdminPrivilege = user.role.isAdmin;
         _pushNotificationService?.saveTokenToUser(user.id);
-        emit(Authenticated(user));
+        emit(Authenticated(user, canSwitchRolePreview: _hasAdminPrivilege));
       },
       onFailure: (failure) => emit(AuthFailureState(failure.message)),
     );
@@ -102,8 +105,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     );
     result.fold(
       onSuccess: (user) {
+        _hasAdminPrivilege = user.role.isAdmin;
         _pushNotificationService?.saveTokenToUser(user.id);
-        emit(Authenticated(user));
+        emit(Authenticated(user, canSwitchRolePreview: _hasAdminPrivilege));
       },
       onFailure: (failure) => emit(AuthFailureState(failure.message)),
     );
@@ -120,6 +124,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     final result = await _signOutUseCase();
     result.fold(
       onSuccess: (_) {
+        _hasAdminPrivilege = false;
         if (currentUserId != null) {
           _pushNotificationService?.removeTokenFromUser(currentUserId);
         }
@@ -134,33 +139,30 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     emit(const AuthLoading());
-    final email = '${event.id}@kickoff.app';
+    final cleanPhone = event.phoneNumber.replaceAll(RegExp(r'[\s\-\+]'), '');
+    final email = cleanPhone.isNotEmpty
+        ? '$cleanPhone@kickoff.app'
+        : '${event.id}@kickoff.app';
+    final effectivePassword =
+        (event.password != null && event.password!.trim().length >= 6)
+        ? event.password!.trim()
+        : 'passwordless_player_token';
+
     final result = await _signUpUseCase(
       email: email,
-      password: 'passwordless_player_token',
+      password: effectivePassword,
       displayName: event.displayName,
-      phoneNumber: event.phoneNumber,
+      phoneNumber: event.phoneNumber.isNotEmpty ? event.phoneNumber : null,
       role: UserRole.player,
     );
     result.fold(
       onSuccess: (user) {
+        _hasAdminPrivilege = false;
         final userWithPhoto = user.copyWith(photoUrl: event.photoUrl);
         _pushNotificationService?.saveTokenToUser(userWithPhoto.id);
         emit(Authenticated(userWithPhoto));
       },
-      onFailure: (failure) {
-        final fallbackUser = UserEntity(
-          id: event.id,
-          email: email,
-          displayName: event.displayName,
-          phoneNumber: event.phoneNumber,
-          photoUrl: event.photoUrl,
-          role: UserRole.player,
-          createdAt: DateTime.now(),
-        );
-        _pushNotificationService?.saveTokenToUser(fallbackUser.id);
-        emit(Authenticated(fallbackUser));
-      },
+      onFailure: (failure) => emit(AuthFailureState(failure.message)),
     );
   }
 }

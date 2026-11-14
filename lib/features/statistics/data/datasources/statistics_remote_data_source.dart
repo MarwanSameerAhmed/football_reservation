@@ -1,7 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../../core/enums/match_status.dart';
 import '../../../../core/enums/player_position.dart';
 import '../../../../core/exceptions/app_exceptions.dart';
 import '../../../../core/utils/character_avatar_helper.dart';
+import '../../../matches/data/datasources/match_remote_data_source.dart';
+import '../../../matches/domain/entities/match_entity.dart';
+import '../../../players/data/datasources/player_remote_data_source.dart';
 import '../models/group_leaderboard_model.dart';
 import '../models/player_stats_model.dart';
 
@@ -11,15 +15,260 @@ abstract class StatisticsRemoteDataSource {
   Future<PlayerStatsModel> getPlayerStats(String playerId);
 }
 
+class _MutablePlayerAccumulator {
+  final String playerId;
+  final String playerName;
+  final String? photoUrl;
+  final PlayerPosition position;
+  int matchesPlayed = 0;
+  int goals = 0;
+  int assists = 0;
+  int cleanSheets = 0;
+  int motmAwards = 0;
+  int wins = 0;
+  int draws = 0;
+  int losses = 0;
+
+  _MutablePlayerAccumulator({
+    required this.playerId,
+    required this.playerName,
+    this.photoUrl,
+    this.position = PlayerPosition.midfielder,
+  });
+
+  PlayerStatsModel toModel() => PlayerStatsModel(
+    playerId: playerId,
+    playerName: playerName,
+    photoUrl: photoUrl,
+    position: position,
+    matchesPlayed: matchesPlayed,
+    goals: goals,
+    assists: assists,
+    cleanSheets: cleanSheets,
+    motmAwards: motmAwards,
+    wins: wins,
+    draws: draws,
+    losses: losses,
+  );
+}
+
+GroupLeaderboardModel _buildLeaderboardFromStats(
+  List<PlayerStatsModel> all, {
+  required int totalMatches,
+  int? totalGoalsOverride,
+}) {
+  final topScorers = List<PlayerStatsModel>.from(all)
+    ..sort((a, b) => b.goals.compareTo(a.goals));
+  final topAssisters = List<PlayerStatsModel>.from(all)
+    ..sort((a, b) => b.assists.compareTo(a.assists));
+  final topCleanSheets = List<PlayerStatsModel>.from(all)
+    ..sort((a, b) => b.cleanSheets.compareTo(a.cleanSheets));
+  final topMotm = List<PlayerStatsModel>.from(all)
+    ..sort((a, b) => b.motmAwards.compareTo(a.motmAwards));
+
+  final totalGoals =
+      totalGoalsOverride ?? all.fold<int>(0, (acc, p) => acc + p.goals);
+
+  return GroupLeaderboardModel(
+    topScorers: topScorers,
+    topAssisters: topAssisters,
+    topCleanSheets: topCleanSheets,
+    topMotm: topMotm,
+    allPlayers: all,
+    totalMatches: totalMatches,
+    totalGoals: totalGoals,
+  );
+}
+
+/// Computes live group statistics and leaderboards directly from recorded match
+/// results and the current player roster so both Firestore and offline modes stay accurate.
+Future<GroupLeaderboardModel> _computeLeaderboardFromSources({
+  required MatchRemoteDataSource matchDataSource,
+  required PlayerRemoteDataSource playerDataSource,
+}) async {
+  final matches = await matchDataSource.getMatches();
+  final players = await playerDataSource.getPlayers();
+  final completedMatches = matches
+      .where((m) => m.result != null || m.status == MatchStatus.completed)
+      .toList();
+
+  if (completedMatches.isEmpty) {
+    return const GroupLeaderboardModel(
+      topScorers: [],
+      topAssisters: [],
+      topCleanSheets: [],
+      topMotm: [],
+      allPlayers: [],
+      totalMatches: 0,
+      totalGoals: 0,
+    );
+  }
+
+  final byKey = <String, _MutablePlayerAccumulator>{};
+  final nameToKey = <String, String>{};
+
+  void registerPlayer({
+    required String id,
+    required String name,
+    String? photoUrl,
+    PlayerPosition position = PlayerPosition.midfielder,
+  }) {
+    final normalizedName = name.trim().toLowerCase();
+    if (normalizedName.isEmpty) return;
+    final key = nameToKey[normalizedName] ?? id;
+    nameToKey[normalizedName] = key;
+    byKey.putIfAbsent(
+      key,
+      () => _MutablePlayerAccumulator(
+        playerId: id,
+        playerName: name.trim(),
+        photoUrl:
+            photoUrl ?? CharacterAvatarHelper.getCharacterUrl(name.trim()),
+        position: position,
+      ),
+    );
+  }
+
+  _MutablePlayerAccumulator resolveOrCreate({
+    String? id,
+    required String name,
+    String? photoUrl,
+    PlayerPosition position = PlayerPosition.midfielder,
+  }) {
+    final trimmed = name.trim();
+    final normalizedName = trimmed.toLowerCase();
+    if (nameToKey.containsKey(normalizedName)) {
+      return byKey[nameToKey[normalizedName]!]!;
+    }
+    if (id != null && byKey.containsKey(id)) {
+      return byKey[id]!;
+    }
+    final assignedId = (id != null && id.isNotEmpty)
+        ? id
+        : 'stats_${trimmed.hashCode}';
+    registerPlayer(
+      id: assignedId,
+      name: trimmed,
+      photoUrl: photoUrl,
+      position: position,
+    );
+    return byKey[nameToKey[normalizedName]!]!;
+  }
+
+  for (final p in players) {
+    registerPlayer(
+      id: p.id,
+      name: p.name,
+      photoUrl: p.photoUrl,
+      position: p.primaryPosition,
+    );
+  }
+
+  var totalGoals = 0;
+  for (final MatchEntity match in completedMatches) {
+    final seenInMatch = <String>{};
+    for (final reg in match.confirmedPlayers) {
+      final acc = resolveOrCreate(
+        id: reg.playerId,
+        name: reg.playerName,
+        position: reg.playerPosition,
+      );
+      if (seenInMatch.add(acc.playerId)) {
+        acc.matchesPlayed++;
+      }
+    }
+
+    final result = match.result;
+    if (result == null) continue;
+
+    for (final goal in result.goals) {
+      totalGoals++;
+      if (goal.scorerName.trim().isNotEmpty) {
+        final scorer = resolveOrCreate(
+          id: goal.scorerPlayerId,
+          name: goal.scorerName,
+        );
+        scorer.goals++;
+        if (seenInMatch.add(scorer.playerId)) {
+          scorer.matchesPlayed++;
+        }
+      }
+      final assistName = goal.assistPlayerName?.trim();
+      if (assistName != null && assistName.isNotEmpty) {
+        final assister = resolveOrCreate(name: assistName);
+        assister.assists++;
+        if (seenInMatch.add(assister.playerId)) {
+          assister.matchesPlayed++;
+        }
+      }
+    }
+
+    final motmName = result.manOfTheMatchName?.trim();
+    if (motmName != null && motmName.isNotEmpty) {
+      final motm = resolveOrCreate(name: motmName);
+      motm.motmAwards++;
+      if (seenInMatch.add(motm.playerId)) {
+        motm.matchesPlayed++;
+      }
+    }
+  }
+
+  final activeStats = byKey.values
+      .where(
+        (a) =>
+            a.matchesPlayed > 0 ||
+            a.goals > 0 ||
+            a.assists > 0 ||
+            a.motmAwards > 0,
+      )
+      .map((a) => a.toModel())
+      .toList();
+
+  if (activeStats.isEmpty) {
+    return const GroupLeaderboardModel(
+      topScorers: [],
+      topAssisters: [],
+      topCleanSheets: [],
+      topMotm: [],
+      allPlayers: [],
+      totalMatches: 0,
+      totalGoals: 0,
+    );
+  }
+
+  return _buildLeaderboardFromStats(
+    activeStats,
+    totalMatches: completedMatches.length,
+    totalGoalsOverride: totalGoals,
+  );
+}
+
 class FirebaseStatisticsRemoteDataSource implements StatisticsRemoteDataSource {
   final FirebaseFirestore _firestore;
+  final MatchRemoteDataSource? _matchDataSource;
+  final PlayerRemoteDataSource? _playerDataSource;
 
-  FirebaseStatisticsRemoteDataSource({FirebaseFirestore? firestore})
-    : _firestore = firestore ?? FirebaseFirestore.instance;
+  FirebaseStatisticsRemoteDataSource({
+    FirebaseFirestore? firestore,
+    MatchRemoteDataSource? matchDataSource,
+    PlayerRemoteDataSource? playerDataSource,
+  }) : _firestore = firestore ?? FirebaseFirestore.instance,
+       _matchDataSource = matchDataSource,
+       _playerDataSource = playerDataSource;
 
   @override
   Future<GroupLeaderboardModel> getGroupLeaderboards() async {
     try {
+      if (_matchDataSource != null && _playerDataSource != null) {
+        final computed = await _computeLeaderboardFromSources(
+          matchDataSource: _matchDataSource,
+          playerDataSource: _playerDataSource,
+        );
+        if (computed.allPlayers.isNotEmpty) {
+          return computed;
+        }
+      }
+
       final doc = await _firestore
           .collection('statistics')
           .doc('group_leaderboard')
@@ -44,6 +293,17 @@ class FirebaseStatisticsRemoteDataSource implements StatisticsRemoteDataSource {
   @override
   Future<PlayerStatsModel> getPlayerStats(String playerId) async {
     try {
+      if (_matchDataSource != null && _playerDataSource != null) {
+        final computed = await _computeLeaderboardFromSources(
+          matchDataSource: _matchDataSource,
+          playerDataSource: _playerDataSource,
+        );
+        final match = computed.allPlayers
+            .where((p) => p.playerId == playerId)
+            .firstOrNull;
+        if (match != null) return PlayerStatsModel.fromEntity(match);
+      }
+
       final doc = await _firestore
           .collection('player_statistics')
           .doc(playerId)
@@ -62,10 +322,24 @@ class FirebaseStatisticsRemoteDataSource implements StatisticsRemoteDataSource {
 /// Pre-seeded in-memory mock data source for immediate offline operation and testing.
 class MockStatisticsRemoteDataSource implements StatisticsRemoteDataSource {
   final Map<String, PlayerStatsModel> _playerStats = {};
+  final MatchRemoteDataSource? _matchDataSource;
+  final PlayerRemoteDataSource? _playerDataSource;
   final Duration delay;
 
-  MockStatisticsRemoteDataSource({this.delay = Duration.zero}) {
-    _seedDefaultStats();
+  MockStatisticsRemoteDataSource({
+    this.delay = Duration.zero,
+    bool seedDefault = true,
+    MatchRemoteDataSource? matchDataSource,
+    PlayerRemoteDataSource? playerDataSource,
+  }) : _matchDataSource = matchDataSource,
+       _playerDataSource = playerDataSource {
+    if (seedDefault) {
+      _seedDefaultStats();
+    }
+  }
+
+  void clearAll() {
+    _playerStats.clear();
   }
 
   void _seedDefaultStats() {
@@ -333,30 +607,18 @@ class MockStatisticsRemoteDataSource implements StatisticsRemoteDataSource {
   Future<GroupLeaderboardModel> getGroupLeaderboards() async {
     if (delay > Duration.zero) await Future.delayed(delay);
 
-    final all = _playerStats.values.toList();
+    if (_playerStats.isEmpty &&
+        _matchDataSource != null &&
+        _playerDataSource != null) {
+      return _computeLeaderboardFromSources(
+        matchDataSource: _matchDataSource,
+        playerDataSource: _playerDataSource,
+      );
+    }
 
-    final topScorers = List<PlayerStatsModel>.from(all)
-      ..sort((a, b) => b.goals.compareTo(a.goals));
-
-    final topAssisters = List<PlayerStatsModel>.from(all)
-      ..sort((a, b) => b.assists.compareTo(a.assists));
-
-    final topCleanSheets = List<PlayerStatsModel>.from(all)
-      ..sort((a, b) => b.cleanSheets.compareTo(a.cleanSheets));
-
-    final topMotm = List<PlayerStatsModel>.from(all)
-      ..sort((a, b) => b.motmAwards.compareTo(a.motmAwards));
-
-    final totalGoals = all.fold(0, (acc, p) => acc + p.goals);
-
-    return GroupLeaderboardModel(
-      topScorers: topScorers,
-      topAssisters: topAssisters,
-      topCleanSheets: topCleanSheets,
-      topMotm: topMotm,
-      allPlayers: all,
+    return _buildLeaderboardFromStats(
+      _playerStats.values.toList(),
       totalMatches: 24,
-      totalGoals: totalGoals,
     );
   }
 
@@ -364,7 +626,19 @@ class MockStatisticsRemoteDataSource implements StatisticsRemoteDataSource {
   Future<PlayerStatsModel> getPlayerStats(String playerId) async {
     if (delay > Duration.zero) await Future.delayed(delay);
     final stats = _playerStats[playerId];
-    if (stats == null) throw NotFoundException('إحصائيات اللاعب غير متوفرة');
-    return stats;
+    if (stats != null) return stats;
+
+    if (_matchDataSource != null && _playerDataSource != null) {
+      final computed = await _computeLeaderboardFromSources(
+        matchDataSource: _matchDataSource,
+        playerDataSource: _playerDataSource,
+      );
+      final match = computed.allPlayers
+          .where((p) => p.playerId == playerId)
+          .firstOrNull;
+      if (match != null) return PlayerStatsModel.fromEntity(match);
+    }
+
+    throw NotFoundException('إحصائيات اللاعب غير متوفرة');
   }
 }

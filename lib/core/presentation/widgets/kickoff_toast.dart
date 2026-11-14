@@ -106,42 +106,59 @@ class KickoffToastWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (badgeBg, iconColor, iconData) = switch (type) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final dark = theme.brightness == Brightness.dark;
+
+    final (accent, background, foreground, iconData) = switch (type) {
       KickoffToastType.success => (
-          AppColors.turfGreenNeon,
-          AppColors.canvasDark,
+          dark ? const Color(0xFF34D399) : AppColors.emerald,
+          Color.alphaBlend(
+            AppColors.emerald.withValues(alpha: dark ? 0.16 : 0.10),
+            scheme.surface,
+          ),
+          scheme.onSurface,
           Icons.check_rounded,
         ),
       KickoffToastType.error => (
-          AppColors.redNeon,
-          Colors.white,
+          scheme.error,
+          scheme.errorContainer,
+          scheme.onErrorContainer,
           Icons.close_rounded,
         ),
       KickoffToastType.warning => (
-          AppColors.amberNeon,
-          AppColors.canvasDark,
+          dark ? const Color(0xFFFBBF24) : AppColors.amber,
+          Color.alphaBlend(
+            AppColors.amber.withValues(alpha: dark ? 0.16 : 0.11),
+            scheme.surface,
+          ),
+          scheme.onSurface,
           Icons.priority_high_rounded,
         ),
       KickoffToastType.info => (
-          AppColors.blueNeon,
-          AppColors.canvasDark,
+          scheme.primary,
+          Color.alphaBlend(
+            scheme.primary.withValues(alpha: dark ? 0.14 : 0.08),
+            scheme.surface,
+          ),
+          scheme.onSurface,
           Icons.info_outline_rounded,
         ),
     };
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
       decoration: BoxDecoration(
-        color: AppColors.darkSlate,
-        borderRadius: BorderRadius.circular(20),
+        color: background,
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: badgeBg.withValues(alpha: 0.35),
+          color: accent.withValues(alpha: 0.28),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.32),
-            blurRadius: 18,
+            color: Colors.black.withValues(alpha: dark ? 0.22 : 0.12),
+            blurRadius: 16,
             offset: const Offset(0, 6),
           ),
         ],
@@ -150,17 +167,17 @@ class KickoffToastWidget extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 26,
-            height: 26,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
-              color: badgeBg,
-              borderRadius: BorderRadius.circular(9),
+              color: accent.withValues(alpha: dark ? 0.20 : 0.14),
+              borderRadius: BorderRadius.circular(11),
             ),
             child: Center(
               child: Icon(
                 iconData,
-                size: 16,
-                color: iconColor,
+                size: 18,
+                color: accent,
               ),
             ),
           ),
@@ -168,8 +185,8 @@ class KickoffToastWidget extends StatelessWidget {
           Expanded(
             child: Text(
               message,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: foreground,
                 fontWeight: FontWeight.w700,
                 fontSize: 13.5,
                 height: 1.3,

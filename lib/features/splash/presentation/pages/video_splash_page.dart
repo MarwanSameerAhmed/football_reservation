@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:video_player/video_player.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/extensions/context_extensions.dart';
+import '../../../authentication/presentation/bloc/auth_bloc.dart';
+import '../../../authentication/presentation/bloc/auth_state.dart';
 
 /// Full-screen Video Splash Screen.
 ///
@@ -20,7 +23,7 @@ class VideoSplashPage extends StatefulWidget {
 
 class _VideoSplashPageState extends State<VideoSplashPage> {
   static const String _videoAsset =
-      'assets/splash_screen/gemini_generated_video_77849432.mp4';
+      'assets/splash_screen/gemini_generated_video_839511a5.mp4';
 
   late final VideoPlayerController _controller;
   bool _navigated = false;
@@ -47,7 +50,7 @@ class _VideoSplashPageState extends State<VideoSplashPage> {
       await _controller.initialize();
       if (mounted) {
         setState(() {});
-        await _controller.setPlaybackSpeed(1.85);
+        await _controller.setPlaybackSpeed(1.0);
         await _controller.play();
       }
     } catch (e) {
@@ -57,13 +60,13 @@ class _VideoSplashPageState extends State<VideoSplashPage> {
       return;
     }
 
-    // Safety fallback timer matching the accelerated video duration (~4.5s)
-    _fallbackTimer = Timer(const Duration(seconds: 4, milliseconds: 500), () {
+    // Safety fallback timer matching the 6-second video duration
+    _fallbackTimer = Timer(const Duration(seconds: 6, milliseconds: 200), () {
       _navigateToNext();
     });
   }
 
-  void _navigateToNext() {
+  Future<void> _navigateToNext() async {
     if (_navigated) return;
     _navigated = true;
     _fallbackTimer?.cancel();
@@ -71,9 +74,36 @@ class _VideoSplashPageState extends State<VideoSplashPage> {
       widget.onComplete!();
       return;
     }
-    if (mounted) {
-      try {
+    if (!mounted) return;
+    try {
+      final authBloc = context.read<AuthBloc?>();
+      if (authBloc != null) {
+        var authState = authBloc.state;
+        if (authState is AuthInitial || authState is AuthLoading) {
+          try {
+            authState = await authBloc.stream
+                .firstWhere(
+                  (state) => state is! AuthInitial && state is! AuthLoading,
+                )
+                .timeout(const Duration(seconds: 2));
+          } catch (_) {
+            authState = authBloc.state;
+          }
+        }
+        if (!mounted) return;
+        if (authState is Unauthenticated || authState is AuthFailureState) {
+          context.go('/sign-in');
+          return;
+        }
+      }
+      if (mounted) {
         context.go('/');
+      }
+    } catch (_) {
+      try {
+        if (mounted) {
+          context.go('/');
+        }
       } catch (_) {
         // Safe when pumped without GoRouter in standalone tests
       }
@@ -111,16 +141,29 @@ class _VideoSplashPageState extends State<VideoSplashPage> {
                             Colors.transparent,
                             BlendMode.multiply,
                           )
-                        : ColorFilter.mode(
-                            effectiveBg,
-                            BlendMode.multiply,
-                          ),
+                        : ColorFilter.mode(effectiveBg, BlendMode.multiply),
                     child: ColorFiltered(
                       colorFilter: const ColorFilter.matrix(<double>[
-                        1.45, 0,    0,    0, 22,
-                        0,    1.45, 0,    0, 22,
-                        0,    0,    1.45, 0, 22,
-                        0,    0,    0,    1, 0,
+                        1.45,
+                        0,
+                        0,
+                        0,
+                        22,
+                        0,
+                        1.45,
+                        0,
+                        0,
+                        22,
+                        0,
+                        0,
+                        1.45,
+                        0,
+                        22,
+                        0,
+                        0,
+                        0,
+                        1,
+                        0,
                       ]),
                       child: VideoPlayer(_controller),
                     ),

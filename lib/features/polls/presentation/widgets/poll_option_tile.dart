@@ -24,12 +24,11 @@ class PollOptionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = context.isDarkMode;
+    final cs = context.colorScheme;
 
     final borderColor = isWinner
-        ? AppColors.amberText
-        : (isSelectedByMe
-              ? AppColors.turfGreen
-              : (isDark ? AppColors.borderDark : AppColors.borderLight));
+        ? AppColors.amber
+        : (isSelectedByMe ? cs.primary : cs.outlineVariant);
 
     return InkWell(
       onTap: isClosed ? null : onTap,
@@ -88,18 +87,16 @@ class PollOptionTile extends StatelessWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: isWinner
-                          ? AppColors.amberText
+                          ? AppColors.amber
                           : (isSelectedByMe
-                                ? AppColors.turfGreen
+                                ? cs.primary
                                 : Colors.transparent),
                       border: Border.all(
                         color: isWinner
-                            ? AppColors.amberText
+                            ? AppColors.amber
                             : (isSelectedByMe
-                                  ? AppColors.turfGreen
-                                  : (isDark
-                                        ? AppColors.textSecondaryLight
-                                        : AppColors.borderLight)),
+                                  ? cs.primary
+                                  : cs.outlineVariant),
                         width: 1.5,
                       ),
                     ),
@@ -111,10 +108,10 @@ class PollOptionTile extends StatelessWidget {
                               color: Colors.white,
                             )
                           : (isSelectedByMe
-                                ? const Icon(
+                                ? Icon(
                                     Icons.check_rounded,
                                     size: 16,
-                                    color: AppColors.darkSlate,
+                                    color: cs.onPrimary,
                                   )
                                 : null),
                     ),

@@ -51,9 +51,7 @@ class SelectMatchForLineupSheet extends StatelessWidget {
                     Icon(
                       Icons.event_busy_rounded,
                       size: 48,
-                      color: isDark
-                          ? AppColors.textSecondaryDark
-                          : const Color(0xFF94A3B8),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     const SizedBox(height: 12),
                     Text(
@@ -78,30 +76,34 @@ class SelectMatchForLineupSheet extends StatelessWidget {
                   final confirmedCount = match.confirmedPlayers.length;
                   final maxCount = match.maxPlayers;
                   final isFull = confirmedCount >= maxCount;
+                  final cs = Theme.of(context).colorScheme;
+                  final emerald = isDark
+                      ? AppColors.turfGreenNeon
+                      : AppColors.primaryEmerald;
 
                   return Container(
                     margin: const EdgeInsets.only(bottom: 12),
                     decoration: BoxDecoration(
-                      color: isDark ? AppColors.surfaceDark : Colors.white,
-                      borderRadius: BorderRadius.circular(16),
+                      color: cs.surface,
+                      borderRadius: BorderRadius.circular(18),
                       border: Border.all(
-                        color: isDark
-                            ? const Color(0xFF2A3A30)
-                            : const Color(0xFFE2E8F0),
+                        color: cs.outlineVariant.withValues(alpha: 0.7),
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.04),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+                      boxShadow: isDark
+                          ? null
+                          : [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.03),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                     ),
                     child: Material(
                       color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(18),
                       child: InkWell(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(18),
                         onTap: () {
                           Navigator.of(context).pop();
                           onSelectMatch(match);
@@ -110,19 +112,19 @@ class SelectMatchForLineupSheet extends StatelessWidget {
                           padding: const EdgeInsets.all(16.0),
                           child: Row(
                             children: [
-                              // Soccer Icon Container
+                              // Tactical Indigo Squircle Well
                               Container(
                                 width: 44,
                                 height: 44,
                                 decoration: BoxDecoration(
-                                  color: isDark
-                                      ? AppColors.surfaceDarkElevated
-                                      : AppColors.meadowTint,
-                                  shape: BoxShape.circle,
+                                  color: AppColors.indigoAccent.withValues(
+                                    alpha: isDark ? 0.16 : 0.10,
+                                  ),
+                                  borderRadius: BorderRadius.circular(13),
                                 ),
                                 child: const Icon(
                                   Icons.sports_soccer_rounded,
-                                  color: AppColors.turfGreenDark,
+                                  color: AppColors.indigoAccent,
                                   size: 22,
                                 ),
                               ),
@@ -149,9 +151,7 @@ class SelectMatchForLineupSheet extends StatelessWidget {
                                         Icon(
                                           Icons.stadium_rounded,
                                           size: 14,
-                                          color: isDark
-                                              ? AppColors.textSecondaryDark
-                                              : const Color(0xFF64748B),
+                                          color: cs.onSurfaceVariant,
                                         ),
                                         const SizedBox(width: 4),
                                         Expanded(
@@ -159,9 +159,7 @@ class SelectMatchForLineupSheet extends StatelessWidget {
                                             match.pitchName,
                                             style: TextStyle(
                                               fontSize: 12,
-                                              color: isDark
-                                                  ? AppColors.textSecondaryDark
-                                                  : const Color(0xFF64748B),
+                                              color: cs.onSurfaceVariant,
                                             ),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
@@ -175,18 +173,14 @@ class SelectMatchForLineupSheet extends StatelessWidget {
                                         Icon(
                                           Icons.access_time_rounded,
                                           size: 14,
-                                          color: isDark
-                                              ? AppColors.textSecondaryDark
-                                              : const Color(0xFF64748B),
+                                          color: cs.onSurfaceVariant,
                                         ),
                                         const SizedBox(width: 4),
                                         Text(
                                           match.formattedDateTime,
                                           style: TextStyle(
                                             fontSize: 11.5,
-                                            color: isDark
-                                                ? AppColors.textSecondaryDark
-                                                : const Color(0xFF64748B),
+                                            color: cs.onSurfaceVariant,
                                           ),
                                         ),
                                       ],
@@ -203,13 +197,11 @@ class SelectMatchForLineupSheet extends StatelessWidget {
                                 ),
                                 decoration: BoxDecoration(
                                   color: isFull
-                                      ? (isDark
-                                          ? const Color(0xFF1E3A2B)
-                                          : const Color(0xFFDCFCE7))
-                                      : (isDark
-                                          ? const Color(0xFF262626)
-                                          : const Color(0xFFF1F5F9)),
-                                  borderRadius: BorderRadius.circular(12),
+                                      ? emerald.withValues(
+                                          alpha: isDark ? 0.16 : 0.10,
+                                        )
+                                      : cs.surfaceContainer,
+                                  borderRadius: BorderRadius.circular(999),
                                 ),
                                 child: Text(
                                   '$confirmedCount / $maxCount لاعب',
@@ -217,26 +209,18 @@ class SelectMatchForLineupSheet extends StatelessWidget {
                                     fontSize: 11.5,
                                     fontWeight: FontWeight.bold,
                                     color: isFull
-                                        ? (isDark
-                                            ? AppColors.turfGreenNeon
-                                            : AppColors.turfGreenDark)
-                                        : (isDark
-                                            ? AppColors.textSecondaryDark
-                                            : const Color(0xFF475569)),
+                                        ? emerald
+                                        : cs.onSurfaceVariant,
                                   ),
                                 ),
                               ),
                               const SizedBox(width: 8),
 
-                              // Arrow Chevron
+                              // Arrow Chevron pointing left in RTL
                               Icon(
-                                context.isRtl
-                                    ? Icons.chevron_right_rounded
-                                    : Icons.chevron_right_rounded,
+                                Icons.chevron_left_rounded,
                                 size: 20,
-                                color: isDark
-                                    ? AppColors.textSecondaryDark
-                                    : const Color(0xFF94A3B8),
+                                color: cs.onSurfaceVariant,
                               ),
                             ],
                           ),

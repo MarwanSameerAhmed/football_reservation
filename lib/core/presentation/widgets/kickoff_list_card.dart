@@ -59,16 +59,16 @@ class KickoffListCard extends StatelessWidget {
                   // Leading squircle thumbnail or player avatar
                   leading ??
                       Container(
-                        width: 48,
-                        height: 48,
+                        width: 46,
+                        height: 46,
                         decoration: BoxDecoration(
-                          color: tint.withValues(alpha: isDark ? 0.16 : 0.10),
-                          borderRadius: BorderRadius.circular(13),
+                          color: tint.withValues(alpha: isDark ? 0.16 : 0.11),
+                          borderRadius: BorderRadius.circular(14),
                         ),
                         child: Icon(
                           Icons.sports_soccer_rounded,
                           color: tint,
-                          size: 24,
+                          size: 22,
                         ),
                       ),
 

@@ -34,21 +34,28 @@ class AppErrorWidget extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Circular container with subtle red tint
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: context.isDarkMode
-                    ? Colors.red.withValues(alpha: 0.15)
-                    : AppColors.redTint,
-              ),
-              child: const Icon(
-                Icons.error_outline_rounded,
-                size: 38,
-                color: AppColors.redText,
-              ),
+            // Squircle container with subtle crimson tint
+            Builder(
+              builder: (context) {
+                final redAccent = context.isDarkMode
+                    ? AppColors.redNeon
+                    : AppColors.redText;
+                return Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(24),
+                    color: redAccent.withValues(
+                      alpha: context.isDarkMode ? 0.16 : 0.10,
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.error_outline_rounded,
+                    size: 38,
+                    color: redAccent,
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 20),
             Text(

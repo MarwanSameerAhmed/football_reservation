@@ -29,6 +29,9 @@ class MatchLineupCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = context.isDarkMode;
+    final cs = Theme.of(context).colorScheme;
+    final emerald = isDark ? AppColors.turfGreenNeon : AppColors.primaryEmerald;
+    final amber = isDark ? AppColors.amberNeon : AppColors.amberText;
     final isFinalized = lineup?.isFinalized ?? false;
 
     // Check if the player is assigned to any team
@@ -62,14 +65,12 @@ class MatchLineupCard extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: isDark
-                    ? const Color(0xFF26332B)
-                    : const Color(0xFFEAF5EF),
-                shape: BoxShape.circle,
+                color: emerald.withValues(alpha: isDark ? 0.16 : 0.10),
+                borderRadius: BorderRadius.circular(13),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.hourglass_top_rounded,
-                color: Color(0xFF164E3D),
+                color: emerald,
                 size: 22,
               ),
             ),
@@ -90,9 +91,7 @@ class MatchLineupCard extends StatelessWidget {
                     'تشكيلة الفرق قيد الإعداد بواسطة الكابتن. سيصلك إشعار فوري عند صدورها!',
                     style: TextStyle(
                       fontSize: 11.5,
-                      color: isDark
-                          ? AppColors.textSecondaryDark
-                          : const Color(0xFF6B7280),
+                      color: cs.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -107,7 +106,7 @@ class MatchLineupCard extends StatelessWidget {
                 playerName: currentUserName,
               ),
               style: TextButton.styleFrom(
-                foregroundColor: AppColors.redText,
+                foregroundColor: isDark ? AppColors.redNeon : AppColors.redText,
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               ),
               icon: const Icon(Icons.event_busy_rounded, size: 16),
@@ -137,14 +136,14 @@ class MatchLineupCard extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFEAF5EF),
-                        shape: BoxShape.circle,
+                      padding: const EdgeInsets.all(7),
+                      decoration: BoxDecoration(
+                        color: emerald.withValues(alpha: isDark ? 0.16 : 0.10),
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.groups_rounded,
-                        color: Color(0xFF164E3D),
+                        color: emerald,
                         size: 18,
                       ),
                     ),
@@ -169,22 +168,18 @@ class MatchLineupCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: isDark
-                          ? const Color(0xFF22382C)
-                          : const Color(0xFFEAF5EF),
-                      borderRadius: BorderRadius.circular(8),
+                      color: emerald.withValues(alpha: isDark ? 0.16 : 0.10),
+                      borderRadius: BorderRadius.circular(999),
                       border: Border.all(
-                        color: isDark
-                            ? const Color(0xFF2E4E3E)
-                            : const Color(0xFFC7E2D2),
+                        color: emerald.withValues(alpha: isDark ? 0.30 : 0.25),
                       ),
                     ),
-                    child: const Text(
+                    child: Text(
                       'معتمدة رسمياً ✓',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF164E3D),
+                        color: emerald,
                       ),
                     ),
                   ),
@@ -217,14 +212,10 @@ class MatchLineupCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: isDark
-                    ? const Color(0xFF1C2721)
-                    : const Color(0xFFF0FDF4),
-                borderRadius: BorderRadius.circular(10),
+                color: emerald.withValues(alpha: isDark ? 0.14 : 0.08),
+                borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: isDark
-                      ? const Color(0xFF2E4E3E)
-                      : const Color(0xFFBBF7D0),
+                  color: emerald.withValues(alpha: isDark ? 0.30 : 0.24),
                 ),
               ),
               child: Column(
@@ -232,10 +223,10 @@ class MatchLineupCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.sports_soccer_rounded,
                         size: 16,
-                        color: Color(0xFF164E3D),
+                        color: emerald,
                       ),
                       const SizedBox(width: 6),
                       Expanded(
@@ -244,9 +235,7 @@ class MatchLineupCard extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 12.5,
                             fontWeight: FontWeight.bold,
-                            color: isDark
-                                ? const Color(0xFF86EFAC)
-                                : const Color(0xFF164E3D),
+                            color: emerald,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -262,18 +251,14 @@ class MatchLineupCard extends StatelessWidget {
                       if (playerTeam.captain != null)
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
+                            horizontal: 7,
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: isDark
-                                ? const Color(0xFF3B2D12)
-                                : const Color(0xFFFEF3C7),
-                            borderRadius: BorderRadius.circular(6),
+                            color: amber.withValues(alpha: isDark ? 0.16 : 0.12),
+                            borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: isDark
-                                  ? const Color(0xFF78350F)
-                                  : const Color(0xFFFCD34D),
+                              color: amber.withValues(alpha: isDark ? 0.35 : 0.28),
                             ),
                           ),
                           child: Text(
@@ -281,9 +266,7 @@ class MatchLineupCard extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 10.5,
                               fontWeight: FontWeight.bold,
-                              color: isDark
-                                  ? const Color(0xFFFCD34D)
-                                  : const Color(0xFF92400E),
+                              color: amber,
                             ),
                           ),
                         ),
@@ -302,18 +285,18 @@ class MatchLineupCard extends StatelessWidget {
                             if (turn > 0) {
                               return Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
+                                  horizontal: 7,
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: isDark
-                                      ? const Color(0xFF1E3329)
-                                      : const Color(0xFFEAF5EF),
-                                  borderRadius: BorderRadius.circular(6),
+                                  color: emerald.withValues(
+                                    alpha: isDark ? 0.16 : 0.10,
+                                  ),
+                                  borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
-                                    color: isDark
-                                        ? const Color(0xFF2E4E3E)
-                                        : const Color(0xFFC7E2D2),
+                                    color: emerald.withValues(
+                                      alpha: isDark ? 0.30 : 0.24,
+                                    ),
                                   ),
                                 ),
                                 child: Text(
@@ -321,9 +304,7 @@ class MatchLineupCard extends StatelessWidget {
                                   style: TextStyle(
                                     fontSize: 10.5,
                                     fontWeight: FontWeight.w600,
-                                    color: isDark
-                                        ? const Color(0xFF86EFAC)
-                                        : const Color(0xFF164E3D),
+                                    color: emerald,
                                   ),
                                 ),
                               );
@@ -359,19 +340,13 @@ class MatchLineupCard extends StatelessWidget {
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: isUserInThisTeam
-                      ? (isDark
-                            ? const Color(0xFF213027)
-                            : const Color(0xFFE8F5EE))
-                      : (isDark
-                            ? AppColors.surfaceDarkElevated
-                            : AppColors.canvasLight),
-                  borderRadius: BorderRadius.circular(12),
+                      ? emerald.withValues(alpha: isDark ? 0.14 : 0.08)
+                      : cs.surfaceContainer,
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: isUserInThisTeam
-                        ? const Color(0xFF164E3D)
-                        : (isDark
-                              ? AppColors.borderDark
-                              : AppColors.borderLight),
+                        ? emerald.withValues(alpha: 0.65)
+                        : cs.outlineVariant.withValues(alpha: 0.7),
                   ),
                 ),
                 child: Column(
@@ -391,10 +366,8 @@ class MatchLineupCard extends StatelessWidget {
                                     fontSize: 13,
                                     fontWeight: FontWeight.bold,
                                     color: isUserInThisTeam
-                                        ? const Color(0xFF164E3D)
-                                        : (isDark
-                                              ? Colors.white
-                                              : AppColors.darkSlate),
+                                        ? emerald
+                                        : cs.onSurface,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -404,23 +377,21 @@ class MatchLineupCard extends StatelessWidget {
                                 const SizedBox(width: 6),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 5,
-                                    vertical: 1,
+                                    horizontal: 6,
+                                    vertical: 1.5,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: isDark
-                                        ? const Color(0xFF3B2D12)
-                                        : const Color(0xFFFEF3C7),
-                                    borderRadius: BorderRadius.circular(4),
+                                    color: amber.withValues(
+                                      alpha: isDark ? 0.16 : 0.12,
+                                    ),
+                                    borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
                                     '👑 ${team.captain!.name}',
                                     style: TextStyle(
                                       fontSize: 9.5,
                                       fontWeight: FontWeight.bold,
-                                      color: isDark
-                                          ? const Color(0xFFFCD34D)
-                                          : const Color(0xFF92400E),
+                                      color: amber,
                                     ),
                                   ),
                                 ),
@@ -432,9 +403,7 @@ class MatchLineupCard extends StatelessWidget {
                           '${team.players.length} لاعبين',
                           style: TextStyle(
                             fontSize: 11,
-                            color: isDark
-                                ? AppColors.textSecondaryDark
-                                : AppColors.textSecondaryLight,
+                            color: cs.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -444,9 +413,7 @@ class MatchLineupCard extends StatelessWidget {
                       playerNames.isNotEmpty ? playerNames : 'قيد التوزيع',
                       style: TextStyle(
                         fontSize: 11.5,
-                        color: isDark
-                            ? AppColors.textSecondaryDark
-                            : const Color(0xFF4B5563),
+                        color: cs.onSurfaceVariant,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,

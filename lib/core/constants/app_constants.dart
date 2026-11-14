@@ -1,6 +1,6 @@
 /// Global Application Constants for Kickoff.
 abstract class AppConstants {
-  static const String appName = 'Kickoff';
+  static const String appName = 'Formtor';
   static const String appTagline = 'إدارة وتنظيم مجموعات كرة القدم';
 
   // Responsive Layout Constants

@@ -17,7 +17,10 @@ class NotificationBellButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = context.isDarkMode;
-    final defaultBg = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
+    final cs = context.colorScheme;
+    final defaultBg = isDark
+        ? AppColors.darkSurfaceMuted.withValues(alpha: 0.75)
+        : AppColors.surfaceMuted;
 
     return BlocBuilder<NotificationsBloc, NotificationsState>(
       builder: (context, state) {
@@ -34,16 +37,9 @@ class NotificationBellButton extends StatelessWidget {
               shape: BoxShape.circle,
               color: defaultBg,
               border: Border.all(
-                color: isDark ? AppColors.borderDark : AppColors.borderLight,
+                color: cs.outlineVariant,
                 width: 1.0,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
             ),
             child: Material(
               color: Colors.transparent,
@@ -58,31 +54,45 @@ class NotificationBellButton extends StatelessWidget {
                       unreadCount > 0
                           ? Icons.notifications_active_rounded
                           : Icons.notifications_none_rounded,
-                      color: isDark ? Colors.white : AppColors.darkSlate,
-                      size: size * 0.5,
+                      color: cs.onSurface,
+                      size: size * 0.48,
                     ),
                     if (unreadCount > 0)
                       Positioned(
-                        top: 4,
-                        left: context.isRtl ? 4 : null,
-                        right: context.isRtl ? null : 4,
+                        top: 3,
+                        left: context.isRtl ? 3 : null,
+                        right: context.isRtl ? null : 3,
                         child: Container(
-                          padding: const EdgeInsets.all(3),
-                          decoration: const BoxDecoration(
-                            color: AppColors.turfGreen,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.blue,
                             shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isDark ? AppColors.darkSurface : Colors.white,
+                              width: 2.0,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.blue.withValues(alpha: 0.35),
+                                blurRadius: 4,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
                           ),
                           constraints: const BoxConstraints(
-                            minWidth: 16,
-                            minHeight: 16,
+                            minWidth: 18,
+                            minHeight: 18,
                           ),
                           child: Center(
                             child: Text(
                               '$unreadCount',
                               style: const TextStyle(
-                                color: AppColors.darkSlate,
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
                                 height: 1.0,
                               ),
                             ),

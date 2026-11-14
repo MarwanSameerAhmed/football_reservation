@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:football_reservation/app/theme/app_colors.dart';
+import 'package:football_reservation/app/theme/app_theme.dart';
 import 'package:football_reservation/core/extensions/context_extensions.dart';
 import 'package:football_reservation/core/presentation/widgets/kickoff_toast.dart';
 
 void main() {
   Widget buildTestHost({required void Function(BuildContext) onTrigger}) {
     return MaterialApp(
+      theme: AppTheme.lightTheme,
       home: Scaffold(
         body: Builder(
           builder: (context) {
@@ -45,15 +47,23 @@ void main() {
       );
       expect(find.byIcon(Icons.check_rounded), findsOneWidget);
 
-      // Verify executive squircle toast decoration
+      // Verify tam_app toast decoration (AppToastView parity)
       final containerFinder = find.descendant(
         of: find.byType(KickoffToastWidget),
         matching: find.byType(Container),
       ).first;
       final container = tester.widget<Container>(containerFinder);
       final decoration = container.decoration as BoxDecoration;
-      expect(decoration.color, equals(AppColors.darkSlate));
-      expect(decoration.borderRadius, equals(BorderRadius.circular(20)));
+      expect(
+        decoration.color,
+        equals(
+          Color.alphaBlend(
+            AppColors.emerald.withValues(alpha: 0.10),
+            AppColors.surface,
+          ),
+        ),
+      );
+      expect(decoration.borderRadius, equals(BorderRadius.circular(18)));
     });
 
     testWidgets('Renders error toast with close icon', (

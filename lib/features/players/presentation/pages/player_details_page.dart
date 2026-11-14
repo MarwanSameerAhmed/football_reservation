@@ -41,7 +41,16 @@ class PlayerDetailsPage extends StatelessWidget {
           }
 
           final ovr = player.skills.overallRating;
+          final authState = context.watch<AuthBloc>().state;
+          final currentUser =
+              authState is Authenticated ? authState.user : null;
+          final canEditPhoto = currentUser != null &&
+              (currentUser.id == player.userId ||
+                  currentUser.id == player.id ||
+                  (currentUser.displayName.trim().isNotEmpty &&
+                      currentUser.displayName.trim() == player.name.trim()));
 
+          final cs = context.colorScheme;
           return Scaffold(
             appBar: KickoffTopBar(
               title: player.nickname != null
@@ -54,30 +63,16 @@ class PlayerDetailsPage extends StatelessWidget {
                 vertical: 16.0,
               ),
               children: [
-                // 1. Executive Obsidian FUT Hero Card
+                // 1. Clean White Player Hero Card (tam_app surface)
                 Container(
                   padding: const EdgeInsets.all(20.0),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: isDark
-                          ? const [Color(0xFF0E1713), Color(0xFF14211B)]
-                          : const [Color(0xFF111815), Color(0xFF172720)],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    ),
-                    borderRadius: BorderRadius.circular(26),
+                    color: cs.surface,
+                    borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: AppColors.turfGreenNeon.withValues(alpha: 0.35),
-                      width: 1.2,
+                      color: cs.outlineVariant,
+                      width: 1.0,
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: (isDark ? Colors.black : AppColors.darkSlate)
-                            .withValues(alpha: isDark ? 0.45 : 0.16),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
                   ),
                   child: Column(
                     children: [
@@ -92,12 +87,10 @@ class PlayerDetailsPage extends StatelessWidget {
                               vertical: 8,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.08),
-                              borderRadius: BorderRadius.circular(16),
+                              color: cs.primaryContainer,
+                              borderRadius: BorderRadius.circular(14),
                               border: Border.all(
-                                color: AppColors.owlLimeNeon.withValues(
-                                  alpha: 0.65,
-                                ),
+                                color: cs.primary.withValues(alpha: 0.28),
                                 width: 1.2,
                               ),
                             ),
@@ -107,19 +100,19 @@ class PlayerDetailsPage extends StatelessWidget {
                                 Text(
                                   '$ovr',
                                   style: AppTypography.tabular(
-                                    const TextStyle(
+                                    TextStyle(
                                       fontSize: 26,
                                       fontWeight: FontWeight.w900,
-                                      color: AppColors.owlLimeNeon,
+                                      color: cs.primary,
                                     ),
                                   ),
                                 ),
-                                const Text(
+                                Text(
                                   'OVR تقييم',
                                   style: TextStyle(
                                     fontSize: 9.5,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.white70,
+                                    color: cs.onSurfaceVariant,
                                   ),
                                 ),
                               ],
@@ -127,7 +120,7 @@ class PlayerDetailsPage extends StatelessWidget {
                           ),
                           const SizedBox(width: 16),
 
-                          // Interactive Avatar with Camera Badge
+                          // Interactive Avatar (Editable ONLY by the player themselves)
                           Stack(
                             clipBehavior: Clip.none,
                             children: [
@@ -135,36 +128,39 @@ class PlayerDetailsPage extends StatelessWidget {
                                 photoUrl: player.photoUrl,
                                 name: player.name,
                                 size: 78,
-                                borderColor: AppColors.turfGreenNeon,
+                                borderColor: cs.primary,
                                 borderWidth: 2.5,
-                                onTap: () =>
-                                    _showPhotoPickerSheet(context, player),
+                                onTap: canEditPhoto
+                                    ? () =>
+                                        _showPhotoPickerSheet(context, player)
+                                    : null,
                               ),
-                              Positioned(
-                                bottom: -2,
-                                left: context.isRtl ? -2 : null,
-                                right: context.isRtl ? null : -2,
-                                child: GestureDetector(
-                                  onTap: () =>
-                                      _showPhotoPickerSheet(context, player),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(6),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.turfGreenNeon,
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: AppColors.darkSlate,
-                                        width: 1.5,
+                              if (canEditPhoto)
+                                Positioned(
+                                  bottom: -2,
+                                  left: context.isRtl ? -2 : null,
+                                  right: context.isRtl ? null : -2,
+                                  child: GestureDetector(
+                                    onTap: () =>
+                                        _showPhotoPickerSheet(context, player),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: cs.primary,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: cs.surface,
+                                          width: 1.5,
+                                        ),
                                       ),
-                                    ),
-                                    child: const Icon(
-                                      Icons.camera_alt_rounded,
-                                      size: 13,
-                                      color: AppColors.darkSlate,
+                                      child: Icon(
+                                        Icons.camera_alt_rounded,
+                                        size: 13,
+                                        color: cs.onPrimary,
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
                             ],
                           ),
                         ],
@@ -174,7 +170,7 @@ class PlayerDetailsPage extends StatelessWidget {
                       Text(
                         player.name,
                         style: context.textTheme.titleMedium?.copyWith(
-                          color: Colors.white,
+                          color: cs.onSurface,
                           fontWeight: FontWeight.w800,
                           fontSize: 20,
                         ),
@@ -184,7 +180,7 @@ class PlayerDetailsPage extends StatelessWidget {
                         Text(
                           'لقب اللاعب: "${player.nickname}"',
                           style: context.textTheme.bodySmall?.copyWith(
-                            color: AppColors.owlLimeNeon,
+                            color: cs.primary,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -208,43 +204,42 @@ class PlayerDetailsPage extends StatelessWidget {
                             ),
                           KickoffBadge(
                             label: 'القدم: ${player.preferredFoot.labelArabic}',
-                            customBackground:
-                                Colors.white.withValues(alpha: 0.10),
-                            customTextColor: Colors.white,
+                            customBackground: cs.surfaceContainer,
+                            customTextColor: cs.onSurfaceVariant,
                           ),
                         ],
                       ),
                       const SizedBox(height: 14),
 
-                      // Frosted Last Updated Timestamp Pill
+                      // Last Updated Timestamp Pill
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
                           vertical: 5,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.08),
+                          color: cs.surfaceContainer,
                           borderRadius: BorderRadius.circular(999),
                           border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.14),
+                            color: cs.outlineVariant,
                           ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.history_rounded,
                               size: 14,
-                              color: AppColors.turfGreenNeon,
+                              color: cs.primary,
                             ),
                             const SizedBox(width: 6),
                             Flexible(
                               child: Text(
                                 'آخر تحديث: ${DateFormat('d MMMM yyyy', 'ar').format(player.createdAt)}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
-                                  color: Colors.white70,
+                                  color: cs.onSurfaceVariant,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -327,14 +322,14 @@ class PlayerDetailsPage extends StatelessWidget {
                       return ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: isDark
-                              ? AppColors.turfGreenNeon
-                              : AppColors.primaryEmerald,
+                              ? AppColors.darkText
+                              : AppColors.ink,
                           foregroundColor: isDark
-                              ? AppColors.canvasDark
+                              ? AppColors.ink
                               : Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(14),
                           ),
                         ),
                         onPressed: () {
@@ -352,11 +347,11 @@ class PlayerDetailsPage extends StatelessWidget {
                       );
                     }
 
-                    return Container(
+                    return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 10),
-                      alignment: Alignment.center,
                       child: Text(
                         'تقييمات اللاعب معتمدة ومحدثة من قبل كابتن المجموعة.',
+                        textAlign: TextAlign.center,
                         style: context.textTheme.bodySmall?.copyWith(
                           color: isDark
                               ? AppColors.textSecondaryDark
@@ -384,8 +379,13 @@ class PlayerDetailsPage extends StatelessWidget {
     final isDark = context.isDarkMode;
     final cs = context.colorScheme;
     final accent = isHighlight
-        ? (isDark ? AppColors.amberNeon : AppColors.amberText)
-        : (isDark ? AppColors.turfGreenNeon : AppColors.primaryEmerald);
+        ? (isDark ? AppColors.amberNeon : AppColors.amber)
+        : cs.primary;
+    final iconWellBg = isHighlight
+        ? (isDark
+            ? AppColors.amber.withValues(alpha: 0.18)
+            : AppColors.amberTint)
+        : cs.primary.withValues(alpha: isDark ? 0.16 : 0.10);
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
@@ -393,8 +393,8 @@ class PlayerDetailsPage extends StatelessWidget {
         color: cs.surface,
         borderRadius: BorderRadius.circular(16.0),
         border: Border.all(
-          color: isHighlight ? accent.withValues(alpha: 0.45) : cs.outlineVariant,
-          width: isHighlight ? 1.5 : 1.0,
+          color: cs.outlineVariant,
+          width: 1.0,
         ),
       ),
       child: Column(
@@ -402,7 +402,7 @@ class PlayerDetailsPage extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: accent.withValues(alpha: isDark ? 0.16 : 0.11),
+              color: iconWellBg,
               borderRadius: BorderRadius.circular(9),
             ),
             child: Icon(icon, size: 17, color: accent),
@@ -414,7 +414,7 @@ class PlayerDetailsPage extends StatelessWidget {
               context.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w800,
                 fontSize: 17,
-                color: isHighlight ? accent : cs.onSurface,
+                color: cs.onSurface,
               ),
             ),
           ),
@@ -432,9 +432,8 @@ class PlayerDetailsPage extends StatelessWidget {
   }
 
   void _showPhotoPickerSheet(BuildContext context, PlayerEntity player) {
-    final isDark = context.isDarkMode;
     final cs = context.colorScheme;
-    final accent = isDark ? AppColors.turfGreenNeon : AppColors.primaryEmerald;
+    final accent = cs.primary;
     showModalBottomSheet(
       context: context,
       useRootNavigator: true,

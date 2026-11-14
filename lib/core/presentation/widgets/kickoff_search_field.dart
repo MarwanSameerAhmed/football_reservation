@@ -29,13 +29,13 @@ class KickoffSearchField extends StatelessWidget {
 
     return Row(
       children: [
-        // Executive Squircle Search Bar
+        // Squircle Search Bar matching `tam_app` inputDecorationTheme (14px radius)
         Expanded(
           child: Container(
             height: 48,
             decoration: BoxDecoration(
-              color: cs.surface,
-              borderRadius: BorderRadius.circular(16),
+              color: isDark ? AppColors.darkInput : cs.surface,
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: cs.outlineVariant,
                 width: 1.0,
@@ -46,7 +46,7 @@ class KickoffSearchField extends StatelessWidget {
               children: [
                 Icon(
                   Icons.search_rounded,
-                  color: cs.outline,
+                  color: cs.onSurfaceVariant,
                   size: 20,
                 ),
                 const SizedBox(width: 10),
@@ -60,8 +60,11 @@ class KickoffSearchField extends StatelessWidget {
                     decoration: InputDecoration(
                       hintText: effectiveHint,
                       hintStyle: context.textTheme.bodyMedium?.copyWith(
-                        color: cs.outline,
+                        color: isDark
+                            ? AppColors.darkMuted
+                            : const Color(0xFF4B5563),
                         fontSize: 13.5,
+                        fontWeight: FontWeight.w500,
                       ),
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,
@@ -76,17 +79,15 @@ class KickoffSearchField extends StatelessWidget {
           ),
         ),
 
-        // Emerald Filter Button
+        // Primary Royal Blue Filter Button
         if (showFilterButton && onFilterTap != null) ...[
           const SizedBox(width: 10),
           KickoffCircleButton(
             icon: Icons.tune_rounded,
             onPressed: onFilterTap!,
             size: 48,
-            backgroundColor: isDark
-                ? AppColors.turfGreenNeon
-                : AppColors.primaryEmerald,
-            iconColor: isDark ? AppColors.canvasDark : Colors.white,
+            backgroundColor: cs.primary,
+            iconColor: cs.onPrimary,
             hasBorder: false,
             tooltip: 'تصفية',
           ),

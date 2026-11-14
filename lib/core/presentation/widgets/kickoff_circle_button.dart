@@ -28,10 +28,10 @@ class KickoffCircleButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = context.isDarkMode;
     final cs = context.colorScheme;
-    final defaultBg = cs.surface;
-    final defaultIconColor = isDark
-        ? AppColors.textPrimaryDark
-        : AppColors.darkSlate;
+    final defaultBg = isDark
+        ? AppColors.darkSurfaceMuted.withValues(alpha: 0.75)
+        : AppColors.surfaceMuted;
+    final defaultIconColor = cs.onSurface;
 
     return Semantics(
       button: true,

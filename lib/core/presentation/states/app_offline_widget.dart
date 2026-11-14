@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../app/theme/app_colors.dart';
 import '../../extensions/context_extensions.dart';
 
 /// Reusable Offline / No-Connection State Widget.
@@ -20,22 +19,23 @@ class AppOfflineWidget extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: context.isDarkMode
-                    ? AppColors.surfaceDarkElevated
-                    : AppColors.canvasLight,
-              ),
-              child: Icon(
-                Icons.wifi_off_rounded,
-                size: 38,
-                color: context.isDarkMode
-                    ? Colors.white70
-                    : AppColors.textSecondaryLight,
-              ),
+            Builder(
+              builder: (context) {
+                final cs = Theme.of(context).colorScheme;
+                return Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(24),
+                    color: cs.surfaceContainer,
+                  ),
+                  child: Icon(
+                    Icons.wifi_off_rounded,
+                    size: 38,
+                    color: cs.onSurfaceVariant,
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 18),
             Text(

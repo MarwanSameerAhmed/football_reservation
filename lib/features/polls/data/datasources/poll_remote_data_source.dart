@@ -170,8 +170,17 @@ class MockPollRemoteDataSource implements PollRemoteDataSource {
   final Map<String, PollModel> _polls = {};
   final Duration delay;
 
-  MockPollRemoteDataSource({this.delay = Duration.zero}) {
-    _seedInitialPolls();
+  MockPollRemoteDataSource({
+    this.delay = Duration.zero,
+    bool seedDefault = true,
+  }) {
+    if (seedDefault) {
+      _seedInitialPolls();
+    }
+  }
+
+  void clearAll() {
+    _polls.clear();
   }
 
   void _seedInitialPolls() {

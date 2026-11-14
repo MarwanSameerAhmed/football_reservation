@@ -16,7 +16,7 @@ import 'package:football_reservation/features/team_generator/domain/repositories
 void main() {
   setUpAll(() async {
     if (!sl.isRegistered<AuthRemoteDataSource>()) {
-      await setupLocator();
+      await setupLocator(seedDemoData: true);
     }
   });
 

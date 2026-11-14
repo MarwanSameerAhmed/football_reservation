@@ -68,7 +68,12 @@ final sl = GetIt.instance;
 ///
 /// Set [useFirebase] to true to connect live to Firebase services
 /// (Auth, Cloud Firestore), or false to use in-memory mock data sources.
-Future<void> setupLocator({bool useFirebase = false}) async {
+/// [seedDemoData] specifies whether mock data sources pre-populate demo fixtures.
+/// Defaults to false so the app opens with a clean slate for real testing.
+Future<void> setupLocator({
+  bool useFirebase = false,
+  bool seedDemoData = false,
+}) async {
   if (sl.isRegistered<AuthRemoteDataSource>()) {
     await sl.reset();
   }
@@ -77,7 +82,7 @@ Future<void> setupLocator({bool useFirebase = false}) async {
   sl.registerLazySingleton<AuthRemoteDataSource>(
     () => useFirebase
         ? FirebaseAuthRemoteDataSource()
-        : MockAuthRemoteDataSource(),
+        : MockAuthRemoteDataSource(seedDefault: seedDemoData),
   );
   sl.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl(sl()));
 
@@ -101,7 +106,7 @@ Future<void> setupLocator({bool useFirebase = false}) async {
   sl.registerLazySingleton<PlayerRemoteDataSource>(
     () => useFirebase
         ? FirebasePlayerRemoteDataSource()
-        : MockPlayerRemoteDataSource(),
+        : MockPlayerRemoteDataSource(seedDefault: seedDemoData),
   );
   sl.registerLazySingleton<PlayerRepository>(() => PlayerRepositoryImpl(sl()));
 
@@ -123,7 +128,7 @@ Future<void> setupLocator({bool useFirebase = false}) async {
   sl.registerLazySingleton<MatchRemoteDataSource>(
     () => useFirebase
         ? FirebaseMatchRemoteDataSource()
-        : MockMatchRemoteDataSource(),
+        : MockMatchRemoteDataSource(seedDefault: seedDemoData),
   );
   sl.registerLazySingleton<MatchRepository>(() => MatchRepositoryImpl(sl()));
 
@@ -176,7 +181,7 @@ Future<void> setupLocator({bool useFirebase = false}) async {
   sl.registerLazySingleton<PollRemoteDataSource>(
     () => useFirebase
         ? FirebasePollRemoteDataSource()
-        : MockPollRemoteDataSource(),
+        : MockPollRemoteDataSource(seedDefault: seedDemoData),
   );
   sl.registerLazySingleton<PollRepository>(() => PollRepositoryImpl(sl()));
 
@@ -199,8 +204,15 @@ Future<void> setupLocator({bool useFirebase = false}) async {
   // ── Statistics Feature ────────────────────────────────────────────────────
   sl.registerLazySingleton<StatisticsRemoteDataSource>(
     () => useFirebase
-        ? FirebaseStatisticsRemoteDataSource()
-        : MockStatisticsRemoteDataSource(),
+        ? FirebaseStatisticsRemoteDataSource(
+            matchDataSource: sl(),
+            playerDataSource: sl(),
+          )
+        : MockStatisticsRemoteDataSource(
+            seedDefault: seedDemoData,
+            matchDataSource: sl(),
+            playerDataSource: sl(),
+          ),
   );
   sl.registerLazySingleton<StatisticsRepository>(
     () => StatisticsRepositoryImpl(sl()),
@@ -215,7 +227,7 @@ Future<void> setupLocator({bool useFirebase = false}) async {
   sl.registerLazySingleton<NotificationRemoteDataSource>(
     () => useFirebase
         ? FirebaseNotificationRemoteDataSource()
-        : MockNotificationRemoteDataSource(),
+        : MockNotificationRemoteDataSource(seedDefault: seedDemoData),
   );
   sl.registerLazySingleton<NotificationRepository>(
     () => NotificationRepositoryImpl(sl()),
@@ -241,4 +253,28 @@ Future<void> setupLocator({bool useFirebase = false}) async {
   sl.registerLazySingleton<FirebaseNotificationSenderService>(
     () => FirebaseNotificationSenderService(),
   );
+}
+
+/// Clears all in-memory mock data across features for clean, repeatable testing.
+void clearAllMockData() {
+  if (sl.isRegistered<PlayerRemoteDataSource>()) {
+    final ds = sl<PlayerRemoteDataSource>();
+    if (ds is MockPlayerRemoteDataSource) ds.clearAll();
+  }
+  if (sl.isRegistered<MatchRemoteDataSource>()) {
+    final ds = sl<MatchRemoteDataSource>();
+    if (ds is MockMatchRemoteDataSource) ds.clearAll();
+  }
+  if (sl.isRegistered<PollRemoteDataSource>()) {
+    final ds = sl<PollRemoteDataSource>();
+    if (ds is MockPollRemoteDataSource) ds.clearAll();
+  }
+  if (sl.isRegistered<StatisticsRemoteDataSource>()) {
+    final ds = sl<StatisticsRemoteDataSource>();
+    if (ds is MockStatisticsRemoteDataSource) ds.clearAll();
+  }
+  if (sl.isRegistered<NotificationRemoteDataSource>()) {
+    final ds = sl<NotificationRemoteDataSource>();
+    if (ds is MockNotificationRemoteDataSource) ds.clearAll();
+  }
 }

@@ -22,14 +22,15 @@ class AuthLoading extends AuthState {
 
 class Authenticated extends AuthState {
   final UserEntity user;
+  final bool canSwitchRolePreview;
 
-  const Authenticated(this.user);
+  const Authenticated(this.user, {this.canSwitchRolePreview = false});
 
   bool get isAdmin => user.isAdmin;
   bool get isPlayer => user.isPlayer;
 
   @override
-  List<Object?> get props => [user];
+  List<Object?> get props => [user, canSwitchRolePreview];
 }
 
 class Unauthenticated extends AuthState {

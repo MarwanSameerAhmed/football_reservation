@@ -192,9 +192,7 @@ class TeamCard extends StatelessWidget {
                             if (!isLast) ...[
                               const SizedBox(width: 4),
                               Icon(
-                                context.isRtl
-                                    ? Icons.arrow_back_rounded
-                                    : Icons.arrow_forward_rounded,
+                                Icons.arrow_back_rounded,
                                 size: 12,
                                 color: isDark
                                     ? AppColors.textSecondaryDark

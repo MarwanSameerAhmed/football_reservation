@@ -125,6 +125,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                           StatisticsCategory.motm => Icons.star_rounded,
                         };
 
+                        final cs = Theme.of(context).colorScheme;
                         return Padding(
                           padding: const EdgeInsets.only(left: 8.0),
                           child: InkWell(
@@ -133,7 +134,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                                 CategoryFilterChanged(cat),
                               );
                             },
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(12),
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 220),
                               curve: Curves.easeOutCubic,
@@ -143,18 +144,16 @@ class _StatisticsPageState extends State<StatisticsPage> {
                               ),
                               decoration: BoxDecoration(
                                 color: isSelected
-                                    ? (isDark
-                                          ? AppColors.turfGreenNeon
-                                          : AppColors.primaryEmerald)
-                                    : Theme.of(context).colorScheme.surface,
-                                borderRadius: BorderRadius.circular(14),
+                                    ? cs.primary.withValues(
+                                        alpha: isDark ? 0.18 : 0.10,
+                                      )
+                                    : cs.surface,
+                                borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: isSelected
-                                      ? Colors.transparent
-                                      : Theme.of(context)
-                                            .colorScheme
-                                            .outlineVariant
-                                            .withValues(alpha: 0.7),
+                                      ? cs.primary
+                                      : cs.outlineVariant,
+                                  width: isSelected ? 1.5 : 1.0,
                                 ),
                               ),
                               child: Row(
@@ -164,12 +163,8 @@ class _StatisticsPageState extends State<StatisticsPage> {
                                     icon,
                                     size: 16,
                                     color: isSelected
-                                        ? (isDark
-                                              ? AppColors.darkSlate
-                                              : Colors.white)
-                                        : (isDark
-                                              ? AppColors.turfGreenNeon
-                                              : AppColors.turfGreenDark),
+                                        ? cs.primary
+                                        : cs.onSurfaceVariant,
                                   ),
                                   const SizedBox(width: 6),
                                   Text(
@@ -177,15 +172,11 @@ class _StatisticsPageState extends State<StatisticsPage> {
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: isSelected
-                                          ? FontWeight.bold
-                                          : FontWeight.normal,
+                                          ? FontWeight.w700
+                                          : FontWeight.w500,
                                       color: isSelected
-                                          ? (isDark
-                                                ? AppColors.darkSlate
-                                                : Colors.white)
-                                          : (isDark
-                                                ? AppColors.textPrimaryDark
-                                                : AppColors.textPrimaryLight),
+                                          ? cs.primary
+                                          : cs.onSurface,
                                     ),
                                   ),
                                 ],
@@ -205,6 +196,43 @@ class _StatisticsPageState extends State<StatisticsPage> {
                       category: statsState.selectedCategory,
                     ),
                     const SizedBox(height: 20),
+                  ] else ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 24,
+                      ),
+                      alignment: Alignment.center,
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.insights_rounded,
+                            size: 32,
+                            color: Theme.of(context).colorScheme.outline,
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            'لا توجد إحصائيات مسجلة بعد',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'ستظهر أسماء المتصدرين والأهداف والجوائز فور إنهاء وتسجيل أول نتيجة مباراة.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color:
+                                  Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                   ],
 
                   // 4. Remaining Ranked Leaderboard List (#4 and below)

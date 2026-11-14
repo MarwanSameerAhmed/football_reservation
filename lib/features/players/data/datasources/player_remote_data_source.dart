@@ -139,8 +139,18 @@ class MockPlayerRemoteDataSource implements PlayerRemoteDataSource {
   final _streamController = StreamController<List<PlayerModel>>.broadcast();
   final Duration delay;
 
-  MockPlayerRemoteDataSource({this.delay = Duration.zero}) {
-    _seedDefaultPlayers();
+  MockPlayerRemoteDataSource({
+    this.delay = Duration.zero,
+    bool seedDefault = true,
+  }) {
+    if (seedDefault) {
+      _seedDefaultPlayers();
+    }
+  }
+
+  void clearAll() {
+    _players.clear();
+    _streamController.add([]);
   }
 
   void _seedDefaultPlayers() {

@@ -31,55 +31,45 @@ class KickoffBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = context.isDarkMode;
+    final cs = context.colorScheme;
 
-    final Color accent;
-    final Color? explicitBg;
+    final Color bg;
+    final Color fg;
 
     switch (variant) {
       case BadgeVariant.success:
-        accent = isDark ? AppColors.turfGreenNeon : AppColors.primaryEmerald;
-        explicitBg = isDark ? null : AppColors.meadowTint;
+        bg = AppColors.emerald.withValues(alpha: isDark ? 0.16 : 0.11);
+        fg = isDark ? const Color(0xFF6EE7B7) : const Color(0xFF087F5B);
         break;
       case BadgeVariant.warning:
-        accent = isDark ? AppColors.amberNeon : AppColors.amberText;
-        explicitBg = isDark ? null : AppColors.amberTint;
+        bg = AppColors.amber.withValues(alpha: isDark ? 0.16 : 0.11);
+        fg = isDark ? const Color(0xFFFBBF24) : const Color(0xFF8A5500);
         break;
       case BadgeVariant.danger:
-        accent = isDark ? AppColors.redNeon : AppColors.redText;
-        explicitBg = isDark ? null : AppColors.redTint;
+        bg = cs.errorContainer;
+        fg = cs.onErrorContainer;
         break;
       case BadgeVariant.info:
-        accent = isDark ? AppColors.blueNeon : AppColors.blueAccent;
-        explicitBg = null;
-        break;
       case BadgeVariant.tactical:
-        accent = isDark ? AppColors.indigoNeon : AppColors.indigoAccent;
-        explicitBg = null;
+        bg = cs.primaryContainer;
+        fg = cs.onPrimaryContainer;
         break;
       case BadgeVariant.neutral:
-        accent = isDark
-            ? AppColors.textSecondaryDark
-            : AppColors.textSecondaryLight;
-        explicitBg = isDark
-            ? AppColors.surfaceDarkElevated
-            : AppColors.surfaceElevatedLight;
+        bg = cs.surfaceContainerHighest;
+        fg = cs.onSurfaceVariant;
         break;
     }
 
-    final bg =
-        customBackground ??
-        explicitBg ??
-        accent.withValues(alpha: isDark ? 0.16 : 0.11);
-    final borderColor = customTextColor != null
-        ? customTextColor!.withValues(alpha: 0.25)
-        : (variant == BadgeVariant.neutral
-              ? context.colorScheme.outlineVariant
-              : accent.withValues(alpha: isDark ? 0.30 : 0.22));
+    final effectiveBg = customBackground ?? bg;
+    final effectiveFg = customTextColor ?? fg;
+    final borderColor = variant == BadgeVariant.neutral && customTextColor == null
+        ? cs.outlineVariant
+        : effectiveFg.withValues(alpha: 0.22);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 5.0),
       decoration: BoxDecoration(
-        color: bg,
+        color: effectiveBg,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: borderColor, width: 1.0),
       ),
@@ -91,8 +81,9 @@ class KickoffBadge extends StatelessWidget {
             child: Text(
               label,
               style: context.textTheme.labelSmall?.copyWith(
-                color: customTextColor ?? accent,
+                color: effectiveFg,
                 fontWeight: FontWeight.w700,
+                height: 1.2,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

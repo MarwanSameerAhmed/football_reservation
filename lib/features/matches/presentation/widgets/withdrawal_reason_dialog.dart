@@ -140,9 +140,7 @@ class _WithdrawalReasonDialogState extends State<WithdrawalReasonDialog> {
             child: Text(
               'تراجع (البقاء في التشكيلة الأساسية)',
               style: TextStyle(
-                color: isDark
-                    ? const Color(0xFF94A3B8)
-                    : const Color(0xFF475569),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
@@ -150,164 +148,140 @@ class _WithdrawalReasonDialogState extends State<WithdrawalReasonDialog> {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Player friendly message
-          Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.surfaceDark
-                    : Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isDark
-                      ? const Color(0xFF2E3D34)
-                      : const Color(0xFFCBD5E1),
+      child: Builder(
+        builder: (context) {
+          final cs = Theme.of(context).colorScheme;
+          final redAccent = isDark ? AppColors.redNeon : AppColors.redText;
+          final amberAccent =
+              isDark ? AppColors.amberNeon : AppColors.amberText;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Player friendly message
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: cs.surface,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: cs.outlineVariant.withValues(alpha: 0.7),
+                  ),
+                ),
+                child: Text(
+                  'نأسف لعدم تمكنك من الحضور يا ${widget.playerName}! يرجى تحديد السبب ليصل إشعار للكابتن ليتمكن من ترتيب التشكيلة وتصعيد البدلاء.',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    height: 1.5,
+                    color: cs.onSurface,
+                  ),
                 ),
               ),
-              child: Text(
-                'نأسف لعدم تمكنك من الحضور يا ${widget.playerName}! يرجى تحديد السبب ليصل إشعار للكابتن ليتمكن من ترتيب التشكيلة وتصعيد البدلاء.',
-                style: TextStyle(
-                  fontSize: 12.5,
-                  height: 1.5,
-                  color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF1E293B),
-                ),
+              const SizedBox(height: 16),
+
+              // Select Reason Chips
+              const Text(
+                'اختر سبب الاعتذار *',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
               ),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _commonReasons.map((reason) {
+                  final isSelected = _selectedReason == reason;
+                  return ChoiceChip(
+                    label: Text(reason),
+                    selected: isSelected,
+                    selectedColor: redAccent.withValues(
+                      alpha: isDark ? 0.16 : 0.10,
+                    ),
+                    backgroundColor: cs.surface,
+                    side: BorderSide(
+                      color: isSelected
+                          ? redAccent
+                          : cs.outlineVariant.withValues(alpha: 0.7),
+                      width: isSelected ? 1.5 : 1.0,
+                    ),
+                    labelStyle: TextStyle(
+                      color: isSelected ? redAccent : cs.onSurface,
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                    onSelected: (val) {
+                      if (val) setState(() => _selectedReason = reason);
+                    },
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 16),
 
-            // Select Reason Chips
-            const Text(
-              'اختر سبب الاعتذار *',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _commonReasons.map((reason) {
-                final isSelected = _selectedReason == reason;
-                return ChoiceChip(
-                  label: Text(reason),
-                  selected: isSelected,
-                  selectedColor: isDark
-                      ? const Color(0xFF3B1818)
-                      : const Color(0xFFFEE2E2),
-                  backgroundColor: isDark
-                      ? AppColors.surfaceDark
-                      : Colors.white,
-                  side: BorderSide(
-                    color: isSelected
-                        ? AppColors.redText
-                        : (isDark
-                              ? const Color(0xFF334155)
-                              : const Color(0xFFCBD5E1)),
-                    width: isSelected ? 1.5 : 1.0,
-                  ),
-                  labelStyle: TextStyle(
-                    color: isSelected
-                        ? AppColors.redText
-                        : (isDark ? const Color(0xFFF1F5F9) : const Color(0xFF1E293B)),
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                    fontSize: 12,
-                  ),
-                  onSelected: (val) {
-                    if (val) setState(() => _selectedReason = reason);
-                  },
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 16),
-
-            // Custom Note Field
-            const Text(
-              'ملاحظة إضافية للكابتن (اختياري)',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _noteController,
-              maxLines: 2,
-              decoration: InputDecoration(
-                hintText: 'اذكر أي تفاصيل تود مشاركتها مع الكابتن...',
-                hintStyle: TextStyle(
-                  fontSize: 13,
-                  color: isDark ? Colors.white38 : Colors.black38,
-                ),
-                prefixIcon: const Icon(Icons.edit_note_rounded),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
-                ),
-                filled: true,
-                fillColor: isDark
-                    ? AppColors.surfaceDark
-                    : Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
+              // Custom Note Field
+              const Text(
+                'ملاحظة إضافية للكابتن (اختياري)',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 6),
+              TextFormField(
+                controller: _noteController,
+                maxLines: 2,
+                decoration: InputDecoration(
+                  hintText: 'اذكر أي تفاصيل تود مشاركتها مع الكابتن...',
+                  hintStyle: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
                     color: isDark
-                        ? const Color(0xFF2E3D34)
-                        : const Color(0xFFCBD5E1),
+                        ? AppColors.darkMuted
+                        : const Color(0xFF4B5563),
                   ),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: isDark
-                        ? const Color(0xFF2E3D34)
-                        : const Color(0xFFCBD5E1),
+                  prefixIcon: const Icon(Icons.edit_note_rounded),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            // Notice about auto-waitlist promotion
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? const Color(0xFF2A2008)
-                    : const Color(0xFFFEF3C7),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isDark
-                      ? const Color(0xFFB45309)
-                      : const Color(0xFFF59E0B),
-                  width: 1.2,
-                ),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(
-                    Icons.info_outline_rounded,
-                    color: Color(0xFFD97706),
-                    size: 18,
+              // Notice about auto-waitlist promotion
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: amberAccent.withValues(alpha: isDark ? 0.14 : 0.10),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: amberAccent.withValues(alpha: isDark ? 0.35 : 0.30),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'عند الانسحاب، سيتم إخلاء مكانك وتصعيد أول لاعب في قائمة الانتظار تلقائياً، وإشعار الكابتن بالسبب فوراً.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        height: 1.45,
-                        fontWeight: FontWeight.w600,
-                        color: isDark
-                            ? const Color(0xFFFDE68A)
-                            : const Color(0xFF92400E),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.info_outline_rounded,
+                      color: amberAccent,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'عند الانسحاب، سيتم إخلاء مكانك وتصعيد أول لاعب في قائمة الانتظار تلقائياً، وإشعار الكابتن بالسبب فوراً.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          height: 1.45,
+                          fontWeight: FontWeight.w600,
+                          color: amberAccent,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-          ],
-        ),
+              const SizedBox(height: 12),
+            ],
+          );
+        },
+      ),
     );
   }
 }

@@ -218,8 +218,9 @@ class MockAuthRemoteDataSource implements AuthRemoteDataSource {
   MockAuthRemoteDataSource({
     UserModel? initialUser,
     this.delay = Duration.zero,
+    bool seedDefault = false,
   }) {
-    _currentUser = initialUser ?? _users['marwan@kickoff.com'];
+    _currentUser = initialUser ?? (seedDefault ? _users['marwan@kickoff.com'] : null);
   }
 
   @override
@@ -231,6 +232,24 @@ class MockAuthRemoteDataSource implements AuthRemoteDataSource {
       _authStreamController.add(_currentUser);
       return _currentUser!;
     }
+
+    // Match by phone number across all users
+    final cleanLookup = normalized.split('@').first.replaceAll(RegExp(r'[\s\-\+]'), '');
+    final phoneMatch = _users.values.cast<UserModel?>().firstWhere(
+          (u) {
+            if (u == null || u.phoneNumber == null) return false;
+            final cleanUserPhone =
+                u.phoneNumber!.replaceAll(RegExp(r'[\s\-\+]'), '');
+            return cleanUserPhone == cleanLookup;
+          },
+          orElse: () => null,
+        );
+    if (phoneMatch != null) {
+      _currentUser = phoneMatch;
+      _authStreamController.add(_currentUser);
+      return phoneMatch;
+    }
+
     // Automatically create if not found in mock for smooth pairing demo
     final newUser = UserModel(
       id: 'user_${DateTime.now().millisecondsSinceEpoch}',

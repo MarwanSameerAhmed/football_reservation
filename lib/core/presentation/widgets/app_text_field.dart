@@ -44,16 +44,17 @@ class AppTextField extends StatelessWidget {
       children: [
         if (label != null) ...[
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 4.0),
+            padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 3.0),
             child: Text(
               label!,
-              style: context.textTheme.labelMedium?.copyWith(
+              style: context.textTheme.labelLarge?.copyWith(
+                fontSize: 13,
                 fontWeight: FontWeight.w700,
                 color: cs.onSurface,
               ),
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 5),
         ],
         TextFormField(
           controller: controller,
@@ -71,7 +72,8 @@ class AppTextField extends StatelessWidget {
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: context.textTheme.bodyMedium?.copyWith(
-              color: cs.outline,
+              color: isDark ? AppColors.darkMuted : const Color(0xFF4B5563),
+              fontWeight: FontWeight.w500,
             ),
             prefixIcon: prefixIcon != null
                 ? Icon(
@@ -82,27 +84,23 @@ class AppTextField extends StatelessWidget {
                 : null,
             suffixIcon: suffixIcon,
             filled: true,
-            fillColor: isDark
-                ? AppColors.surfaceDarkElevated
-                : AppColors.surfaceElevatedLight,
+            fillColor: isDark ? AppColors.darkInput : AppColors.surface,
             contentPadding: const EdgeInsets.symmetric(
-              horizontal: 18,
+              horizontal: 16,
               vertical: 15,
             ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide(color: cs.outlineVariant, width: 1.0),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide(color: cs.outlineVariant, width: 1.0),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide(
-                color: isDark
-                    ? AppColors.turfGreenNeon
-                    : AppColors.primaryEmerald,
+                color: cs.primary,
                 width: 1.5,
               ),
             ),

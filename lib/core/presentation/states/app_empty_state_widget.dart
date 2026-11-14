@@ -35,23 +35,28 @@ class AppEmptyStateWidget extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Circular icon container with soft meadow tint
-            Container(
-              width: 84,
-              height: 84,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: context.isDarkMode
-                    ? AppColors.meadowTintDark
-                    : AppColors.meadowTint,
-              ),
-              child: Icon(
-                icon,
-                size: 40,
-                color: context.isDarkMode
+            // Squircle icon container with soft Emerald tint
+            Builder(
+              builder: (context) {
+                final emerald = context.isDarkMode
                     ? AppColors.turfGreenNeon
-                    : AppColors.turfGreenDark,
-              ),
+                    : AppColors.primaryEmerald;
+                return Container(
+                  width: 84,
+                  height: 84,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(24),
+                    color: emerald.withValues(
+                      alpha: context.isDarkMode ? 0.16 : 0.10,
+                    ),
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 40,
+                    color: emerald,
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 20),
             Text(

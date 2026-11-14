@@ -278,8 +278,19 @@ class MockMatchRemoteDataSource implements MatchRemoteDataSource {
   final _streamController = StreamController<MatchModel?>.broadcast();
   final Duration delay;
 
-  MockMatchRemoteDataSource({this.delay = Duration.zero}) {
-    _seedDefaultMatches();
+  MockMatchRemoteDataSource({
+    this.delay = Duration.zero,
+    bool seedDefault = true,
+  }) {
+    if (seedDefault) {
+      _seedDefaultMatches();
+    }
+  }
+
+  void clearAll() {
+    _matches.clear();
+    _results.clear();
+    _streamController.add(null);
   }
 
   void _seedDefaultMatches() {

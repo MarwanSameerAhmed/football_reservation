@@ -43,8 +43,8 @@ class _MatchesPageState extends State<MatchesPage> {
     final authState = context.watch<AuthBloc>().state;
     final user = authState is Authenticated ? authState.user : null;
     final isAdmin = user?.role == UserRole.admin;
-    final userId = user?.id ?? 'admin_1';
-    final userName = user?.displayName ?? 'مروان سمير';
+    final userId = user?.id ?? 'guest';
+    final userName = user?.displayName ?? 'لاعب';
 
     return KickoffResponsiveShell(
       child: Scaffold(
@@ -231,10 +231,8 @@ class _MatchesPageState extends State<MatchesPage> {
     final timeStr = DateFormat('hh:mm a', 'ar').format(match.matchDateTime);
 
     final cs = context.colorScheme;
-    final activeAccent = isDark
-        ? AppColors.turfGreenNeon
-        : AppColors.primaryEmerald;
-    final warningColor = isDark ? AppColors.amberNeon : AppColors.amberText;
+    final activeAccent = cs.primary;
+    final warningColor = isDark ? AppColors.amberNeon : AppColors.amber;
 
     return Container(
       decoration: BoxDecoration(
@@ -506,14 +504,23 @@ class _MatchesPageState extends State<MatchesPage> {
             else
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isFull ? warningColor : activeAccent,
+                  backgroundColor: isFull
+                      ? (isDark
+                          ? AppColors.amber.withValues(alpha: 0.16)
+                          : AppColors.amberTint)
+                      : cs.primary,
                   foregroundColor: isFull
-                      ? Colors.white
-                      : (isDark ? AppColors.canvasDark : Colors.white),
+                      ? (isDark ? AppColors.amberNeon : AppColors.amberText)
+                      : Colors.white,
                   minimumSize: const Size.fromHeight(48),
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
+                    side: isFull
+                        ? BorderSide(
+                            color: AppColors.amber.withValues(alpha: 0.45),
+                          )
+                        : BorderSide.none,
                   ),
                   elevation: 0,
                 ),
@@ -588,22 +595,15 @@ class _MatchesPageState extends State<MatchesPage> {
                     height: 42,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: isDark
-                            ? AppColors.indigoNeon.withValues(alpha: 0.16)
-                            : AppColors.darkSlate,
-                        foregroundColor: isDark
-                            ? AppColors.indigoNeon
-                            : Colors.white,
+                        backgroundColor: cs.primaryContainer,
+                        foregroundColor: cs.primary,
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
-                          side: isDark
-                              ? BorderSide(
-                                  color: AppColors.indigoNeon
-                                      .withValues(alpha: 0.35),
-                                )
-                              : BorderSide.none,
+                          side: BorderSide(
+                            color: cs.primary.withValues(alpha: 0.25),
+                          ),
                         ),
                       ),
                       onPressed: () =>

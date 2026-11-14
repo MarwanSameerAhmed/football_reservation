@@ -30,6 +30,7 @@ class KickoffApp extends StatelessWidget {
       providers: [
         BlocProvider(create: (_) => ThemeCubit()),
         BlocProvider(
+          lazy: false,
           create: (_) => sl<AuthBloc>()..add(const AuthCheckRequested()),
         ),
         BlocProvider(
@@ -54,7 +55,7 @@ class KickoffApp extends StatelessWidget {
       child: BlocBuilder<ThemeCubit, ThemeState>(
         builder: (context, state) {
           return MaterialApp.router(
-            title: 'Kickoff',
+            title: 'Formtor',
             debugShowCheckedModeBanner: false,
             routerConfig: AppRouter.router,
             theme: AppTheme.lightTheme,

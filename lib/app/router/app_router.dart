@@ -150,19 +150,19 @@ class AppRouter {
           final player =
               state.extra as PlayerEntity? ??
               PlayerEntity(
-                id: state.pathParameters['id'] ?? 'p1',
-                userId: 'u1',
-                name: 'مروان سمير',
+                id: state.pathParameters['id'] ?? 'player',
+                userId: '',
+                name: 'ملف اللاعب',
                 primaryPosition: PlayerPosition.midfielder,
                 skills: const PlayerSkills(
-                  pace: 82,
-                  shooting: 80,
-                  passing: 88,
-                  defending: 76,
-                  physical: 78,
+                  pace: 75,
+                  shooting: 75,
+                  passing: 75,
+                  defending: 75,
+                  physical: 75,
                   goalkeeping: 50,
                 ),
-                createdAt: DateTime(2026, 1, 1),
+                createdAt: DateTime.now(),
               );
           return PlayerDetailsPage(initialPlayer: player);
         },
@@ -174,15 +174,15 @@ class AppRouter {
           final match =
               state.extra as MatchEntity? ??
               MatchEntity(
-                id: 'm1',
-                title: 'مباراة الجمعة الكبرى',
-                pitchName: 'ملعب النخبة الدولي',
-                location: 'حي النخيل • الرياض',
-                matchDateTime: DateTime(2026, 11, 7, 20, 0),
+                id: '',
+                title: 'توزيع الفرق',
+                pitchName: 'الملعب',
+                location: 'الموقع',
+                matchDateTime: DateTime.now(),
                 maxPlayers: 18,
                 feePerPlayer: 0.0,
                 status: MatchStatus.upcoming,
-                createdAt: DateTime(2026, 1, 1),
+                createdAt: DateTime.now(),
               );
           return TeamGeneratorPage(match: match);
         },
@@ -197,13 +197,24 @@ class AppRouter {
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) {
           final queryParams = state.uri.queryParameters;
+          final extra = state.extra is Map
+              ? state.extra as Map
+              : const <String, dynamic>{};
+          final idValue =
+              (extra['id'] ?? queryParams['id'])?.toString().trim() ?? '';
+          final nameValue =
+              (extra['name'] ?? queryParams['name'])?.toString() ?? '';
+          final phoneValue =
+              (extra['phone'] ?? queryParams['phone'])?.toString() ?? '';
+          final roleValue =
+              (extra['role'] ?? queryParams['role'])?.toString() ?? 'player';
           return PlayerActivationPage(
-            playerId:
-                queryParams['id'] ??
-                'p_${DateTime.now().millisecondsSinceEpoch}',
-            name: queryParams['name'] ?? '',
-            phone: queryParams['phone'] ?? '',
-            role: queryParams['role'] ?? 'player',
+            playerId: idValue.isNotEmpty
+                ? idValue
+                : 'p_${DateTime.now().millisecondsSinceEpoch}',
+            name: nameValue,
+            phone: phoneValue,
+            role: roleValue,
           );
         },
       ),
@@ -212,13 +223,24 @@ class AppRouter {
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) {
           final queryParams = state.uri.queryParameters;
+          final extra = state.extra is Map
+              ? state.extra as Map
+              : const <String, dynamic>{};
+          final idValue =
+              (extra['id'] ?? queryParams['id'])?.toString().trim() ?? '';
+          final nameValue =
+              (extra['name'] ?? queryParams['name'])?.toString() ?? '';
+          final phoneValue =
+              (extra['phone'] ?? queryParams['phone'])?.toString() ?? '';
+          final roleValue =
+              (extra['role'] ?? queryParams['role'])?.toString() ?? 'player';
           return PlayerActivationPage(
-            playerId:
-                queryParams['id'] ??
-                'p_${DateTime.now().millisecondsSinceEpoch}',
-            name: queryParams['name'] ?? '',
-            phone: queryParams['phone'] ?? '',
-            role: queryParams['role'] ?? 'player',
+            playerId: idValue.isNotEmpty
+                ? idValue
+                : 'p_${DateTime.now().millisecondsSinceEpoch}',
+            name: nameValue,
+            phone: phoneValue,
+            role: roleValue,
           );
         },
       ),

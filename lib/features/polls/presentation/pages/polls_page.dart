@@ -243,13 +243,12 @@ class _PollsPageState extends State<PollsPage> {
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
             color: isSelected
-                ? (isDark ? AppColors.turfGreenNeon : AppColors.primaryEmerald)
+                ? cs.primary.withValues(alpha: isDark ? 0.18 : 0.10)
                 : cs.surface,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isSelected
-                  ? Colors.transparent
-                  : cs.outlineVariant.withValues(alpha: 0.7),
+              color: isSelected ? cs.primary : cs.outlineVariant,
+              width: isSelected ? 1.5 : 1.0,
             ),
           ),
           alignment: Alignment.center,
@@ -257,10 +256,8 @@ class _PollsPageState extends State<PollsPage> {
             label,
             style: TextStyle(
               fontSize: 11,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-              color: isSelected
-                  ? (isDark ? AppColors.canvasDark : Colors.white)
-                  : cs.onSurfaceVariant,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              color: isSelected ? cs.primary : cs.onSurface,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,

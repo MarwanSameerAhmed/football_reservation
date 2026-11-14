@@ -80,8 +80,18 @@ class MockNotificationRemoteDataSource implements NotificationRemoteDataSource {
   final _unreadCountController = StreamController<int>.broadcast();
   final Duration delay;
 
-  MockNotificationRemoteDataSource({this.delay = Duration.zero}) {
-    _seedDefaultNotifications();
+  MockNotificationRemoteDataSource({
+    this.delay = Duration.zero,
+    bool seedDefault = true,
+  }) {
+    if (seedDefault) {
+      _seedDefaultNotifications();
+    }
+  }
+
+  void clearAll() {
+    _notifications.clear();
+    _unreadCountController.add(0);
   }
 
   void _seedDefaultNotifications() {

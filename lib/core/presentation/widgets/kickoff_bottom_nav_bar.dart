@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../app/theme/app_colors.dart';
 import '../../extensions/context_extensions.dart';
 import '../../motion/kickoff_motion.dart';
 
@@ -27,38 +26,27 @@ class KickoffBottomNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = context.isDarkMode;
     final cs = context.colorScheme;
-    final activeColor = isDark
-        ? AppColors.turfGreenNeon
-        : AppColors.primaryEmerald;
-    final inactiveColor = isDark
-        ? AppColors.textHintDark
-        : AppColors.textHintLight;
-    final activePillBg = activeColor.withValues(alpha: isDark ? 0.16 : 0.11);
+    final activeColor = cs.primary;
+    final inactiveColor = cs.onSurfaceVariant;
+    final activePillBg = activeColor.withValues(alpha: isDark ? 0.18 : 0.10);
 
     return SafeArea(
       top: false,
       child: Padding(
         padding: EdgeInsets.symmetric(
-          horizontal: context.responsive(standard: 20.0, compact: 12.0),
+          horizontal: context.responsive(standard: 16.0, compact: 12.0),
           vertical: 8.0,
         ),
         child: Container(
-          height: 70,
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          height: 68,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           decoration: BoxDecoration(
             color: cs.surface,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: cs.outlineVariant,
               width: 1.0,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.05),
-                blurRadius: 18,
-                offset: const Offset(0, 4),
-              ),
-            ],
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -73,7 +61,7 @@ class KickoffBottomNavBar extends StatelessWidget {
                   label: item.label,
                   child: InkWell(
                     onTap: () => onTap(index),
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(13),
                     child: Center(
                       child: AnimatedContainer(
                         duration: KickoffMotion.accessible(
@@ -82,12 +70,12 @@ class KickoffBottomNavBar extends StatelessWidget {
                         ),
                         curve: KickoffMotion.enter,
                         padding: EdgeInsets.symmetric(
-                          horizontal: isSelected ? 15 : 8,
+                          horizontal: isSelected ? 14 : 8,
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
                           color: isSelected ? activePillBg : Colors.transparent,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(13),
                         ),
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
@@ -98,7 +86,7 @@ class KickoffBottomNavBar extends StatelessWidget {
                               Icon(
                                 item.icon,
                                 color: isSelected ? activeColor : inactiveColor,
-                                size: isSelected ? 24 : 23,
+                                size: 22,
                               ),
                               if (isSelected) ...[
                                 const SizedBox(width: 7),
@@ -106,8 +94,8 @@ class KickoffBottomNavBar extends StatelessWidget {
                                   item.label,
                                   style: TextStyle(
                                     color: activeColor,
-                                    fontSize: 14.0,
-                                    fontWeight: FontWeight.w800,
+                                    fontSize: 13.0,
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
                               ],

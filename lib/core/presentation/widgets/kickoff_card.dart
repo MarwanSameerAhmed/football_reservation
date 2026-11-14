@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import '../../extensions/context_extensions.dart';
 import '../../motion/kickoff_motion.dart';
 
-/// Executive Squircle container card adhering to M3 Surface Hierarchy.
+/// Clean `tam_app` SectionCard container adhering to flat hairline borders.
 ///
-/// Features crisp `1px` `outlineVariant` hairline borders, `20px` default
-/// squircle corners, zero harsh elevation, and tactile micro-scale when tappable.
+/// Features crisp `1px` `outlineVariant` hairline borders, `18px` default
+/// squircle corners, zero elevation, and tactile micro-scale when tappable.
 class KickoffCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
@@ -23,7 +23,7 @@ class KickoffCard extends StatelessWidget {
     this.onTap,
     this.backgroundColor,
     this.border,
-    this.borderRadius = 20.0,
+    this.borderRadius = 18.0,
     this.width,
     this.height,
   });

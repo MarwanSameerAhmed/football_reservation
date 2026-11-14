@@ -59,15 +59,17 @@ class AuthActivatePlayerRequested extends AuthEvent {
   final String id;
   final String displayName;
   final String phoneNumber;
+  final String? password;
   final String? photoUrl;
 
   const AuthActivatePlayerRequested({
     required this.id,
     required this.displayName,
     required this.phoneNumber,
+    this.password,
     this.photoUrl,
   });
 
   @override
-  List<Object?> get props => [id, displayName, phoneNumber, photoUrl];
+  List<Object?> get props => [id, displayName, phoneNumber, password, photoUrl];
 }

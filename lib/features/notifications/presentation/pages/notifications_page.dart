@@ -31,7 +31,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 
   Future<void> _showBroadcastDialog(BuildContext context) async {
-    final titleController = TextEditingController(text: 'تنبيه من الكابتن');
+    final titleController = TextEditingController();
     final messageController = TextEditingController();
     final formKey = GlobalKey<FormState>();
     bool isSending = false;
@@ -40,16 +40,19 @@ class _NotificationsPageState extends State<NotificationsPage> {
       context: context,
       isScrollControlled: true,
       useRootNavigator: true,
-      backgroundColor: context.isDarkMode
-          ? AppColors.surfaceDark
-          : AppColors.surfaceLight,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       builder: (sheetContext) {
         return StatefulBuilder(
           builder: (dialogContext, setModalState) {
             final isDark = context.isDarkMode;
+            final cs = Theme.of(context).colorScheme;
+            final accent = isDark ? AppColors.blueNeon : AppColors.blueAccent;
+            final emerald = isDark
+                ? AppColors.turfGreenNeon
+                : AppColors.primaryEmerald;
             final bottomPadding = MediaQuery.of(
               dialogContext,
             ).viewInsets.bottom;
@@ -58,7 +61,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
               padding: EdgeInsets.only(
                 left: 20,
                 right: 20,
-                top: 24,
+                top: 16,
                 bottom: bottomPadding + 24,
               ),
               child: Form(
@@ -67,20 +70,31 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    Center(
+                      child: Container(
+                        width: 44,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: cs.outlineVariant,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                    ),
                     Row(
                       children: [
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: AppColors.turfGreen.withValues(alpha: 0.15),
-                            shape: BoxShape.circle,
+                            color: accent.withValues(
+                              alpha: isDark ? 0.16 : 0.10,
+                            ),
+                            borderRadius: BorderRadius.circular(13),
                           ),
                           child: Icon(
                             Icons.campaign_rounded,
-                            color: isDark
-                                ? AppColors.turfGreenNeon
-                                : AppColors.turfGreenDark,
-                            size: 26,
+                            color: accent,
+                            size: 24,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -92,18 +106,14 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                 'إرسال إشعار فوري لجميع الأصدقاء',
                                 style: context.textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.bold,
-                                  color: isDark
-                                      ? AppColors.textPrimaryDark
-                                      : AppColors.textPrimaryLight,
+                                  color: cs.onSurface,
                                 ),
                               ),
                               const SizedBox(height: 2),
                               Text(
                                 'سيصل الإشعار لجميع الأجهزة المشتركة عبر FCM',
                                 style: context.textTheme.bodySmall?.copyWith(
-                                  color: isDark
-                                      ? AppColors.textSecondaryDark
-                                      : AppColors.textSecondaryLight,
+                                  color: cs.onSurfaceVariant,
                                 ),
                               ),
                             ],
@@ -114,12 +124,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
                     const SizedBox(height: 20),
                     TextFormField(
                       controller: titleController,
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         labelText: 'عنوان الإشعار',
-                        prefixIcon: const Icon(Icons.title_rounded),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                        hintText: 'أدخل عنوان الإشعار',
+                        prefixIcon: Icon(Icons.title_rounded),
                       ),
                       validator: (value) =>
                           (value == null || value.trim().isEmpty)
@@ -130,13 +138,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
                     TextFormField(
                       controller: messageController,
                       maxLines: 3,
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         labelText: 'نص الرسالة أو التنبيه',
                         hintText: 'اكتب رسالتك لجميع الأصدقاء هنا...',
-                        prefixIcon: const Icon(Icons.message_rounded),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                        prefixIcon: Icon(Icons.message_rounded),
                       ),
                       validator: (value) =>
                           (value == null || value.trim().isEmpty)
@@ -145,15 +150,15 @@ class _NotificationsPageState extends State<NotificationsPage> {
                     ),
                     const SizedBox(height: 20),
                     SizedBox(
-                      height: 48,
+                      height: 50,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: isDark
-                              ? AppColors.turfGreenDark
-                              : AppColors.turfGreen,
-                          foregroundColor: Colors.white,
+                          backgroundColor: emerald,
+                          foregroundColor: isDark
+                              ? AppColors.canvasDark
+                              : Colors.white,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(16),
                           ),
                         ),
                         onPressed: isSending
@@ -259,9 +264,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 onPressed: () => _showBroadcastDialog(context),
                 backgroundColor: context.isDarkMode
                     ? AppColors.turfGreenNeon
-                    : AppColors.turfGreen,
+                    : AppColors.primaryEmerald,
                 foregroundColor: context.isDarkMode
-                    ? AppColors.darkSlate
+                    ? AppColors.canvasDark
                     : Colors.white,
                 icon: const Icon(Icons.campaign_rounded),
                 label: const Text(
@@ -287,7 +292,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
               );
             }
 
-            if (state is NotificationsEmptyState) {
+            if (state is NotificationsEmptyState ||
+                (state is NotificationsLoaded && state.notifications.isEmpty)) {
               return AppEmptyStateWidget(
                 title: 'لا توجد إشعارات حالياً',
                 message:

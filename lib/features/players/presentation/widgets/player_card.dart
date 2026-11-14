@@ -186,7 +186,7 @@ class PlayerCard extends StatelessWidget {
                   const SizedBox(width: 6),
 
                   Icon(
-                    Icons.chevron_right_rounded,
+                    Icons.chevron_left_rounded,
                     size: 18,
                     color: cs.outline,
                   ),

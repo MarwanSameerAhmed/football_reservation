@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../app/theme/app_colors.dart';
-import '../../../../core/constants/app_constants.dart';
 import '../../../../core/enums/player_position.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/presentation/widgets/kickoff_responsive_shell.dart';
@@ -57,8 +56,8 @@ class _ReserveSpotPageState extends State<ReserveSpotPage> {
     final isDark = context.isDarkMode;
     final authState = context.watch<AuthBloc>().state;
     final user = authState is Authenticated ? authState.user : null;
-    final userId = user?.id ?? 'admin_1';
-    final userName = user?.displayName ?? 'مروان سمير';
+    final userId = user?.id ?? 'guest';
+    final userName = user?.displayName ?? 'لاعب';
 
     return KickoffResponsiveShell(
       child: BlocConsumer<MatchesBloc, MatchesState>(
@@ -110,6 +109,13 @@ class _ReserveSpotPageState extends State<ReserveSpotPage> {
             'ar',
           ).format(match.matchDateTime);
 
+          final cs = Theme.of(context).colorScheme;
+          final emerald = isDark
+              ? AppColors.turfGreenNeon
+              : AppColors.primaryEmerald;
+          final amber = isDark ? AppColors.amberNeon : AppColors.amberText;
+          final redAccent = isDark ? AppColors.redNeon : AppColors.redText;
+
           return Scaffold(
             appBar: const KickoffTopBar(title: 'تأكيد الحضور للمباراة'),
             body: ListView(
@@ -122,16 +128,10 @@ class _ReserveSpotPageState extends State<ReserveSpotPage> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: isDark
-                        ? AppColors.surfaceDark
-                        : AppColors.surfaceLight,
-                    borderRadius: BorderRadius.circular(
-                      AppConstants.radiusLarge,
-                    ),
+                    color: cs.surface,
+                    borderRadius: BorderRadius.circular(22),
                     border: Border.all(
-                      color: isDark
-                          ? AppColors.borderDark
-                          : AppColors.borderLight,
+                      color: cs.outlineVariant.withValues(alpha: 0.7),
                     ),
                   ),
                   child: Column(
@@ -142,15 +142,15 @@ class _ReserveSpotPageState extends State<ReserveSpotPage> {
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: AppColors.turfGreen.withValues(
-                                alpha: 0.15,
+                              color: emerald.withValues(
+                                alpha: isDark ? 0.16 : 0.10,
                               ),
-                              shape: BoxShape.circle,
+                              borderRadius: BorderRadius.circular(14),
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.sports_soccer_rounded,
-                              color: AppColors.turfGreen,
-                              size: 28,
+                              color: emerald,
+                              size: 26,
                             ),
                           ),
                           const SizedBox(width: 14),
@@ -167,9 +167,7 @@ class _ReserveSpotPageState extends State<ReserveSpotPage> {
                                 Text(
                                   'نظام 3 فرق • 18 لاعب (الكل يشارك ويحرس)',
                                   style: context.textTheme.bodySmall?.copyWith(
-                                    color: isDark
-                                        ? AppColors.turfGreenNeon
-                                        : AppColors.turfGreenDark,
+                                    color: emerald,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -184,6 +182,7 @@ class _ReserveSpotPageState extends State<ReserveSpotPage> {
 
                       // Location & Time Items
                       _buildInfoRow(
+                        context,
                         icon: Icons.stadium_rounded,
                         title: 'الملعب:',
                         value: '${match.pitchName} (${match.location})',
@@ -191,6 +190,7 @@ class _ReserveSpotPageState extends State<ReserveSpotPage> {
                       ),
                       const SizedBox(height: 10),
                       _buildInfoRow(
+                        context,
                         icon: Icons.calendar_today_rounded,
                         title: 'الموعد:',
                         value: dateStr,
@@ -198,6 +198,7 @@ class _ReserveSpotPageState extends State<ReserveSpotPage> {
                       ),
                       const SizedBox(height: 10),
                       _buildInfoRow(
+                        context,
                         icon: Icons.access_time_rounded,
                         title: 'التوقيت:',
                         value: '$timeStr (المدة: 90 دقيقة)',
@@ -213,16 +214,10 @@ class _ReserveSpotPageState extends State<ReserveSpotPage> {
                 Container(
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
-                    color: isDark
-                        ? AppColors.surfaceDark
-                        : AppColors.surfaceLight,
-                    borderRadius: BorderRadius.circular(
-                      AppConstants.radiusMedium,
-                    ),
+                    color: cs.surface,
+                    borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: isDark
-                          ? AppColors.borderDark
-                          : AppColors.borderLight,
+                      color: cs.outlineVariant.withValues(alpha: 0.7),
                     ),
                   ),
                   child: Column(
@@ -243,9 +238,7 @@ class _ReserveSpotPageState extends State<ReserveSpotPage> {
                                 ? '${match.waitingList.length} في الانتظار ⏳'
                                 : '${maxPlayers - confirmedCount} مقاعد متبقية',
                             style: TextStyle(
-                              color: isFull
-                                  ? Colors.orange
-                                  : AppColors.turfGreen,
+                              color: isFull ? amber : emerald,
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
                             ),
@@ -258,11 +251,9 @@ class _ReserveSpotPageState extends State<ReserveSpotPage> {
                         child: LinearProgressIndicator(
                           value: progress,
                           minHeight: 8,
-                          backgroundColor: isDark
-                              ? AppColors.surfaceDarkElevated
-                              : AppColors.borderLight,
+                          backgroundColor: cs.surfaceContainerHighest,
                           valueColor: AlwaysStoppedAnimation<Color>(
-                            isFull ? Colors.orange : AppColors.turfGreen,
+                            isFull ? amber : emerald,
                           ),
                         ),
                       ),
@@ -271,9 +262,7 @@ class _ReserveSpotPageState extends State<ReserveSpotPage> {
                         'ملاحظة: التسجيل نهائي في قائمة الـ 18 لاعب، ويتم تقسيم اللاعبين إلى 3 فرق متوازنة بواسطة الكابتن.',
                         style: context.textTheme.bodySmall?.copyWith(
                           fontSize: 12,
-                          color: isDark
-                              ? AppColors.textSecondaryDark
-                              : AppColors.textSecondaryLight,
+                          color: cs.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -287,20 +276,21 @@ class _ReserveSpotPageState extends State<ReserveSpotPage> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: isDark
-                          ? AppColors.meadowTintDark
-                          : AppColors.meadowTint,
-                      borderRadius: BorderRadius.circular(14),
+                      color: emerald.withValues(alpha: isDark ? 0.14 : 0.08),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: emerald.withValues(alpha: isDark ? 0.30 : 0.22),
+                      ),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: [
                         Icon(
                           Icons.check_circle_rounded,
-                          color: AppColors.turfGreen,
+                          color: emerald,
                           size: 24,
                         ),
-                        SizedBox(width: 10),
-                        Expanded(
+                        const SizedBox(width: 10),
+                        const Expanded(
                           child: Text(
                             'أنت مسجل ومؤكد حضورك في هذه المباراة!',
                             style: TextStyle(
@@ -317,10 +307,10 @@ class _ReserveSpotPageState extends State<ReserveSpotPage> {
                     height: 48,
                     child: OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.redText,
-                        side: const BorderSide(color: AppColors.redText),
+                        foregroundColor: redAccent,
+                        side: BorderSide(color: redAccent),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(14),
                         ),
                       ),
                       onPressed: _isSubmitting
@@ -337,14 +327,17 @@ class _ReserveSpotPageState extends State<ReserveSpotPage> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.orange.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(14),
+                      color: amber.withValues(alpha: isDark ? 0.14 : 0.10),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: amber.withValues(alpha: isDark ? 0.35 : 0.28),
+                      ),
                     ),
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.hourglass_top_rounded,
-                          color: Colors.orange,
+                          color: amber,
                           size: 24,
                         ),
                         const SizedBox(width: 10),
@@ -365,10 +358,10 @@ class _ReserveSpotPageState extends State<ReserveSpotPage> {
                     height: 48,
                     child: OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.redText,
-                        side: const BorderSide(color: AppColors.redText),
+                        foregroundColor: redAccent,
+                        side: BorderSide(color: redAccent),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(14),
                         ),
                       ),
                       onPressed: _isSubmitting
@@ -387,15 +380,24 @@ class _ReserveSpotPageState extends State<ReserveSpotPage> {
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: isFull
-                            ? Colors.orange
-                            : (isDark
-                                  ? AppColors.turfGreenNeon
-                                  : AppColors.turfGreen),
+                            ? (isDark
+                                ? AppColors.amber.withValues(alpha: 0.16)
+                                : AppColors.amberTint)
+                            : cs.primary,
                         foregroundColor: isFull
-                            ? Colors.white
-                            : (isDark ? AppColors.darkSlate : Colors.white),
+                            ? (isDark
+                                ? AppColors.amberNeon
+                                : AppColors.amberText)
+                            : Colors.white,
+                        elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
+                          side: isFull
+                              ? BorderSide(
+                                  color:
+                                      AppColors.amber.withValues(alpha: 0.45),
+                                )
+                              : BorderSide.none,
                         ),
                       ),
                       onPressed: _isSubmitting
@@ -442,19 +444,22 @@ class _ReserveSpotPageState extends State<ReserveSpotPage> {
     );
   }
 
-  Widget _buildInfoRow({
+  Widget _buildInfoRow(
+    BuildContext context, {
     required IconData icon,
     required String title,
     required String value,
     required bool isDark,
   }) {
+    final cs = Theme.of(context).colorScheme;
+    final emerald = isDark ? AppColors.turfGreenNeon : AppColors.primaryEmerald;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(
           icon,
           size: 18,
-          color: isDark ? AppColors.turfGreenNeon : AppColors.turfGreenDark,
+          color: emerald,
         ),
         const SizedBox(width: 8),
         Text(
@@ -462,9 +467,7 @@ class _ReserveSpotPageState extends State<ReserveSpotPage> {
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 13,
-            color: isDark
-                ? AppColors.textSecondaryDark
-                : AppColors.textSecondaryLight,
+            color: cs.onSurfaceVariant,
           ),
         ),
         const SizedBox(width: 6),

@@ -11,6 +11,7 @@ import '../../../players/presentation/bloc/players_bloc.dart';
 import '../../../players/presentation/bloc/players_event.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
+import '../bloc/auth_state.dart';
 
 /// Screen displayed when a player opens an invitation link from the Admin/Captain.
 /// Name and phone number are locked (read-only) and pre-filled.
@@ -54,12 +55,8 @@ class _PlayerActivationPageState extends State<PlayerActivationPage> {
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(
-      text: widget.name.isNotEmpty ? widget.name : 'لاعب المجموعة',
-    );
-    _phoneController = TextEditingController(
-      text: widget.phone.isNotEmpty ? widget.phone : '0500000000',
-    );
+    _nameController = TextEditingController(text: widget.name);
+    _phoneController = TextEditingController(text: widget.phone);
   }
 
   @override
@@ -73,6 +70,17 @@ class _PlayerActivationPageState extends State<PlayerActivationPage> {
 
   void _activate() {
     final name = _nameController.text.trim();
+    if (name.isEmpty) {
+      context.showWarningToast('يرجى إدخال اسم اللاعب');
+      return;
+    }
+
+    final password = _passwordController.text.trim();
+    if (password.isNotEmpty && password.length < 6) {
+      context.showWarningToast('يجب ألا تقل كلمة المرور عن 6 أحرف');
+      return;
+    }
+
     final phone = _phoneController.text.trim();
     final photo = _customPhotoController.text.trim().isNotEmpty
         ? _customPhotoController.text.trim()
@@ -83,28 +91,44 @@ class _PlayerActivationPageState extends State<PlayerActivationPage> {
         id: widget.playerId,
         displayName: name,
         phoneNumber: phone,
+        password: password.isNotEmpty ? password : null,
         photoUrl: photo,
       ),
-    );
-
-    context.read<PlayersBloc>().add(
-      UpdatePlayerPhotoRequested(playerId: widget.playerId, photoUrl: photo),
-    );
-
-    context.go('/');
-
-    context.showSuccessToast(
-      'أهلاً بك يا $name! تم تفعيل حسابك وحفظ جلستك للأبد ⚽✓',
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = context.isDarkMode;
+    final cs = Theme.of(context).colorScheme;
+    final emerald = isDark ? AppColors.turfGreenNeon : AppColors.primaryEmerald;
+    final redAccent = isDark ? AppColors.redNeon : AppColors.redText;
 
     return KickoffResponsiveShell(
       child: Scaffold(
-        body: SafeArea(
+        body: BlocConsumer<AuthBloc, AuthState>(
+          listener: (context, authState) {
+            if (authState is Authenticated) {
+              final photo = _customPhotoController.text.trim().isNotEmpty
+                  ? _customPhotoController.text.trim()
+                  : _selectedAvatar;
+              context.read<PlayersBloc>().add(
+                UpdatePlayerPhotoRequested(
+                  playerId: widget.playerId,
+                  photoUrl: photo,
+                ),
+              );
+              context.go('/');
+              context.showSuccessToast(
+                'أهلاً بك يا ${authState.user.displayName}! تم تفعيل حسابك بنجاح ⚽✓',
+              );
+            } else if (authState is AuthFailureState) {
+              context.showErrorToast(authState.errorMessage);
+            }
+          },
+          builder: (context, authState) {
+            final isActivating = authState is AuthLoading;
+            return SafeArea(
           child: Center(
             child: SingleChildScrollView(
               padding: EdgeInsets.symmetric(
@@ -121,21 +145,17 @@ class _PlayerActivationPageState extends State<PlayerActivationPage> {
                       width: 80,
                       height: 80,
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: isDark
-                            ? AppColors.meadowTintDark
-                            : AppColors.meadowTint,
+                        borderRadius: BorderRadius.circular(24),
+                        color: emerald.withValues(alpha: isDark ? 0.16 : 0.10),
                         border: Border.all(
-                          color: isDark
-                              ? AppColors.turfGreenNeon
-                              : AppColors.turfGreen,
-                          width: 2.5,
+                          color: emerald.withValues(alpha: 0.45),
+                          width: 2.0,
                         ),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.sports_soccer_rounded,
-                        size: 42,
-                        color: Color(0xFF164E3D),
+                        size: 40,
+                        color: emerald,
                       ),
                     ),
                   ),
@@ -155,9 +175,7 @@ class _PlayerActivationPageState extends State<PlayerActivationPage> {
                     'تمت دعوتك رسمياً بواسطة كابتن المجموعة للمشاركة في المباريات الأسبوعية والتصويت',
                     textAlign: TextAlign.center,
                     style: context.textTheme.bodyMedium?.copyWith(
-                      color: isDark
-                          ? AppColors.textSecondaryDark
-                          : AppColors.textSecondaryLight,
+                      color: cs.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: 32),
@@ -166,161 +184,77 @@ class _PlayerActivationPageState extends State<PlayerActivationPage> {
                   Container(
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF161C19) : Colors.white,
+                      color: cs.surface,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: isDark
-                            ? const Color(0xFF26332B)
-                            : const Color(0xFFE2E8E4),
+                        color: cs.outlineVariant.withValues(alpha: 0.7),
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(
-                            alpha: isDark ? 0.3 : 0.05,
-                          ),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
+                      boxShadow: isDark
+                          ? null
+                          : [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.04),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.verified_user_rounded,
-                              color: Color(0xFF164E3D),
+                              color: emerald,
                               size: 20,
                             ),
                             const SizedBox(width: 8),
-                            Text(
-                              'بيانات العضوية المعتمدة (غير قابلة للتعديل)',
-                              style: TextStyle(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.bold,
-                                color: isDark
-                                    ? const Color(0xFF86EFAC)
-                                    : const Color(0xFF164E3D),
+                            Expanded(
+                              child: Text(
+                                'بيانات العضوية المعتمدة (غير قابلة للتعديل)',
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: emerald,
+                                ),
                               ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 16),
 
-                        // Player Name Field (Locked)
+                        // Player Name Field (Locked when provided by invite)
                         TextFormField(
                           controller: _nameController,
-                          readOnly: true,
+                          readOnly: widget.name.isNotEmpty,
                           decoration: InputDecoration(
                             labelText: 'اسم اللاعب',
+                            hintText: 'أدخل اسمك',
                             prefixIcon: const Icon(Icons.person_rounded),
-                            suffixIcon: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(
-                                        0xFF164E3D,
-                                      ).withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: const Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.lock_rounded,
-                                          size: 14,
-                                          color: Color(0xFF164E3D),
-                                        ),
-                                        SizedBox(width: 4),
-                                        Text(
-                                          'معتمد',
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold,
-                                            color: Color(0xFF164E3D),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            filled: true,
-                            fillColor: isDark
-                                ? const Color(0xFF1C2420)
-                                : const Color(0xFFF9FAFB),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                            suffixIcon: widget.name.isNotEmpty
+                                ? _buildVerifiedBadge(emerald, isDark)
+                                : null,
                           ),
                         ),
                         const SizedBox(height: 14),
 
-                        // Phone Number Field (Locked)
-                        TextFormField(
-                          controller: _phoneController,
-                          readOnly: true,
-                          decoration: InputDecoration(
-                            labelText: 'رقم الجوال',
-                            prefixIcon: const Icon(Icons.phone_android_rounded),
-                            suffixIcon: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
+                        // Phone Number Field (Locked when provided by invite)
+                        Directionality(
+                          textDirection: TextDirection.ltr,
+                          child: TextFormField(
+                            controller: _phoneController,
+                            readOnly: widget.phone.isNotEmpty,
+                            keyboardType: TextInputType.phone,
+                            decoration: InputDecoration(
+                              labelText: 'رقم الجوال',
+                              hintText: 'أدخل رقم الجوال',
+                              prefixIcon: const Icon(
+                                Icons.phone_android_rounded,
                               ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(
-                                        0xFF164E3D,
-                                      ).withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: const Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.lock_rounded,
-                                          size: 14,
-                                          color: Color(0xFF164E3D),
-                                        ),
-                                        SizedBox(width: 4),
-                                        Text(
-                                          'معتمد',
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold,
-                                            color: Color(0xFF164E3D),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            filled: true,
-                            fillColor: isDark
-                                ? const Color(0xFF1C2420)
-                                : const Color(0xFFF9FAFB),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              suffixIcon: widget.phone.isNotEmpty
+                                  ? _buildVerifiedBadge(emerald, isDark)
+                                  : null,
                             ),
                           ),
                         ),
@@ -330,19 +264,12 @@ class _PlayerActivationPageState extends State<PlayerActivationPage> {
                         TextFormField(
                           controller: _passwordController,
                           obscureText: true,
-                          decoration: InputDecoration(
+                          decoration: const InputDecoration(
                             labelText: 'تعيين كلمة مرور لحسابك (اختياري)',
                             hintText: '••••••••',
-                            prefixIcon: const Icon(Icons.lock_outline_rounded),
+                            prefixIcon: Icon(Icons.lock_outline_rounded),
                             helperText:
                                 'لتسجيل الدخول السريع مستقبلاً من أي جهاز أو متصفح',
-                            filled: true,
-                            fillColor: isDark
-                                ? const Color(0xFF1C2420)
-                                : const Color(0xFFF9FAFB),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
                           ),
                         ),
                       ],
@@ -354,31 +281,29 @@ class _PlayerActivationPageState extends State<PlayerActivationPage> {
                   Container(
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF161C19) : Colors.white,
+                      color: cs.surface,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: isDark
-                            ? const Color(0xFF26332B)
-                            : const Color(0xFFE2E8E4),
+                        color: cs.outlineVariant.withValues(alpha: 0.7),
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(
-                            alpha: isDark ? 0.3 : 0.05,
-                          ),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
+                      boxShadow: isDark
+                          ? null
+                          : [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.04),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.photo_camera_front_rounded,
-                              color: Color(0xFF164E3D),
+                              color: emerald,
                               size: 20,
                             ),
                             const SizedBox(width: 8),
@@ -387,9 +312,7 @@ class _PlayerActivationPageState extends State<PlayerActivationPage> {
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
-                                color: isDark
-                                    ? const Color(0xFF86EFAC)
-                                    : const Color(0xFF164E3D),
+                                color: emerald,
                               ),
                             ),
                           ],
@@ -399,9 +322,7 @@ class _PlayerActivationPageState extends State<PlayerActivationPage> {
                           'ارفع صورتك مباشرة (يتم حفظها مجاناً كـ Base64 في قاعدة البيانات دون أي تكلفة تخزين)، أو اختر أيقونة رياضية تعبر عنك:',
                           style: TextStyle(
                             fontSize: 12,
-                            color: isDark
-                                ? AppColors.textSecondaryDark
-                                : AppColors.textSecondaryLight,
+                            color: cs.onSurfaceVariant,
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -440,19 +361,17 @@ class _PlayerActivationPageState extends State<PlayerActivationPage> {
                                       }
                                     },
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: isDark
-                                          ? const Color(0xFF22382C)
-                                          : const Color(0xFFEAF5EF),
-                                      foregroundColor: isDark
-                                          ? const Color(0xFF86EFAC)
-                                          : const Color(0xFF164E3D),
+                                      backgroundColor: emerald.withValues(
+                                        alpha: isDark ? 0.16 : 0.10,
+                                      ),
+                                      foregroundColor: emerald,
                                       elevation: 0,
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(12),
                                         side: BorderSide(
-                                          color: isDark
-                                              ? const Color(0xFF335240)
-                                              : const Color(0xFFC7E2D2),
+                                          color: emerald.withValues(
+                                            alpha: isDark ? 0.35 : 0.25,
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -481,19 +400,17 @@ class _PlayerActivationPageState extends State<PlayerActivationPage> {
                                       }
                                     },
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: isDark
-                                          ? const Color(0xFF22382C)
-                                          : const Color(0xFFEAF5EF),
-                                      foregroundColor: isDark
-                                          ? const Color(0xFF86EFAC)
-                                          : const Color(0xFF164E3D),
+                                      backgroundColor: emerald.withValues(
+                                        alpha: isDark ? 0.16 : 0.10,
+                                      ),
+                                      foregroundColor: emerald,
                                       elevation: 0,
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(12),
                                         side: BorderSide(
-                                          color: isDark
-                                              ? const Color(0xFF335240)
-                                              : const Color(0xFFC7E2D2),
+                                          color: emerald.withValues(
+                                            alpha: isDark ? 0.35 : 0.25,
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -506,7 +423,10 @@ class _PlayerActivationPageState extends State<PlayerActivationPage> {
                                   if (_customPhotoController.text.trim().isNotEmpty) ...[
                                     const SizedBox(width: 8),
                                     IconButton(
-                                      icon: const Icon(Icons.close_rounded, color: AppColors.redText),
+                                      icon: Icon(
+                                        Icons.close_rounded,
+                                        color: redAccent,
+                                      ),
                                       tooltip: 'إزالة الصورة',
                                       onPressed: () {
                                         setState(() {
@@ -546,7 +466,7 @@ class _PlayerActivationPageState extends State<PlayerActivationPage> {
                                   _customPhotoController.clear();
                                 });
                               },
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(14),
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 200),
                                 padding: const EdgeInsets.symmetric(
@@ -555,16 +475,14 @@ class _PlayerActivationPageState extends State<PlayerActivationPage> {
                                 ),
                                 decoration: BoxDecoration(
                                   color: isSelected
-                                      ? (isDark
-                                            ? const Color(0xFF22382C)
-                                            : const Color(0xFFEAF5EF))
-                                      : (isDark
-                                            ? const Color(0xFF1D2622)
-                                            : const Color(0xFFF4F6F5)),
-                                  borderRadius: BorderRadius.circular(12),
+                                      ? emerald.withValues(
+                                          alpha: isDark ? 0.16 : 0.10,
+                                        )
+                                      : cs.surfaceContainer,
+                                  borderRadius: BorderRadius.circular(14),
                                   border: Border.all(
                                     color: isSelected
-                                        ? const Color(0xFF164E3D)
+                                        ? emerald
                                         : Colors.transparent,
                                     width: 1.5,
                                   ),
@@ -584,11 +502,7 @@ class _PlayerActivationPageState extends State<PlayerActivationPage> {
                                         fontWeight: isSelected
                                             ? FontWeight.bold
                                             : FontWeight.normal,
-                                        color: isSelected
-                                            ? (isDark
-                                                  ? const Color(0xFF86EFAC)
-                                                  : const Color(0xFF164E3D))
-                                            : null,
+                                        color: isSelected ? emerald : null,
                                       ),
                                     ),
                                   ],
@@ -603,21 +517,25 @@ class _PlayerActivationPageState extends State<PlayerActivationPage> {
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: isDark
-                                ? const Color(0xFF19231D)
-                                : const Color(0xFFF0FDF4),
-                            borderRadius: BorderRadius.circular(10),
+                            color: emerald.withValues(
+                              alpha: isDark ? 0.12 : 0.06,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: isDark
-                                  ? const Color(0xFF263D2F)
-                                  : const Color(0xFFBBF7D0),
+                              color: emerald.withValues(
+                                alpha: isDark ? 0.28 : 0.22,
+                              ),
                             ),
                           ),
-                          child: const Row(
+                          child: Row(
                             children: [
-                              Icon(Icons.savings_rounded, color: Color(0xFF164E3D), size: 16),
-                              SizedBox(width: 8),
-                              Expanded(
+                              Icon(
+                                Icons.savings_rounded,
+                                color: emerald,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 8),
+                              const Expanded(
                                 child: Text(
                                   'ميزة التوفير: يتم ضغط وحفظ صورتك بصيغة Base64 مباشرة بدون أي اشتراك مدفوع في الفايربيس.',
                                   style: TextStyle(fontSize: 11, height: 1.3),
@@ -635,22 +553,18 @@ class _PlayerActivationPageState extends State<PlayerActivationPage> {
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: isDark
-                          ? const Color(0xFF1B241E)
-                          : const Color(0xFFF0FDF4),
-                      borderRadius: BorderRadius.circular(14),
+                      color: emerald.withValues(alpha: isDark ? 0.12 : 0.06),
+                      borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: isDark
-                            ? const Color(0xFF2E3D34)
-                            : const Color(0xFFBBF7D0),
+                        color: emerald.withValues(alpha: isDark ? 0.28 : 0.22),
                       ),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.devices_rounded,
-                          color: Color(0xFF164E3D),
+                          color: emerald,
                           size: 22,
                         ),
                         const SizedBox(width: 10),
@@ -670,9 +584,7 @@ class _PlayerActivationPageState extends State<PlayerActivationPage> {
                                 'لن تحتاج لإدخال كلمة مرور أو تسجيل الدخول مستقبلاً، وسيتم ربط حضورك وتصويتاتك بحسابك المعتمد فوراً.',
                                 style: TextStyle(
                                   fontSize: 11.5,
-                                  color: isDark
-                                      ? AppColors.textSecondaryDark
-                                      : AppColors.textSecondaryLight,
+                                  color: cs.onSurfaceVariant,
                                 ),
                               ),
                             ],
@@ -685,42 +597,80 @@ class _PlayerActivationPageState extends State<PlayerActivationPage> {
 
                   // Activation Submit Button
                   SizedBox(
-                    height: 50,
+                    height: 52,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: isDark
-                            ? AppColors.turfGreenNeon
-                            : AppColors.turfGreen,
-                        foregroundColor: isDark
-                            ? AppColors.darkSlate
-                            : Colors.white,
+                        backgroundColor: emerald,
+                        foregroundColor:
+                            isDark ? AppColors.canvasDark : Colors.white,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(16),
                         ),
-                        elevation: 2,
+                        elevation: 0,
                       ),
-                      onPressed: _activate,
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.check_circle_rounded, size: 22),
-                          SizedBox(width: 8),
-                          Text(
-                            'تأكيد الدخول والتفعيل',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                      onPressed: isActivating ? null : _activate,
+                      child: isActivating
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(strokeWidth: 2.2),
+                            )
+                          : const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.check_circle_rounded, size: 22),
+                                SizedBox(width: 8),
+                                Text(
+                                  'تأكيد الدخول والتفعيل',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                        ],
-                      ),
                     ),
                   ),
                 ],
               ),
             ),
           ),
+        );
+          },
         ),
+      ),
+    );
+  }
+
+  Widget _buildVerifiedBadge(Color emerald, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: emerald.withValues(alpha: isDark ? 0.16 : 0.10),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.lock_rounded, size: 14, color: emerald),
+                const SizedBox(width: 4),
+                Text(
+                  'معتمد',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: emerald,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

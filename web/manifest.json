@@ -1,6 +1,6 @@
 {
-    "name": "football_reservation",
-    "short_name": "football_reservation",
+    "name": "Formtor",
+    "short_name": "Formtor",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

@@ -8,6 +8,8 @@ import '../../../../core/presentation/widgets/kickoff_avatar.dart';
 import '../../../../core/presentation/widgets/kickoff_card.dart';
 import '../../../../core/presentation/widgets/kickoff_responsive_shell.dart';
 import '../../../../core/presentation/widgets/kickoff_top_bar.dart';
+import '../../../players/presentation/bloc/players_bloc.dart';
+import '../../../players/presentation/bloc/players_state.dart';
 import '../../../polls/presentation/bloc/polls_bloc.dart';
 import '../../../polls/presentation/bloc/polls_state.dart';
 import '../../domain/entities/goal_event_entity.dart';
@@ -67,12 +69,42 @@ class _RecordMatchResultPageState extends State<RecordMatchResultPage> {
     super.dispose();
   }
 
-  List<String> get _participantNames {
-    final names = widget.match.confirmedPlayers.map((p) => p.playerName).toSet().toList();
-    if (names.isEmpty) {
-      return ['مروان سمير', 'فهد الدوسري', 'عمر الشهري', 'سفيان العلي', 'طارق الحربي', 'سالم العنزي'];
+  static const String _noAssistOption = 'بدون صانع (مجهود فردي / ركلة جزاء)';
+
+  List<String> _buildParticipantNames(BuildContext context) {
+    final names = <String>{
+      for (final p in widget.match.confirmedPlayers)
+        if (p.playerName.trim().isNotEmpty) p.playerName.trim(),
+    };
+
+    try {
+      final playersState = context.watch<PlayersBloc>().state;
+      if (playersState is PlayersLoaded) {
+        for (final player in playersState.allPlayers) {
+          if (player.name.trim().isNotEmpty) {
+            names.add(player.name.trim());
+          }
+        }
+      }
+    } catch (_) {
+      // PlayersBloc may not be provided in isolated widget tests.
     }
-    return names;
+
+    // Ensure any preselected MOTM / scorer / assist value exists in dropdown items
+    // so DropdownButton assertions never fire when poll candidates differ from RSVPs.
+    for (final selected in [
+      _selectedMotmPlayerName,
+      _selectedScorerName,
+      _selectedAssistName,
+    ]) {
+      if (selected != null &&
+          selected.trim().isNotEmpty &&
+          selected != _noAssistOption) {
+        names.add(selected.trim());
+      }
+    }
+
+    return names.toList();
   }
 
   void _addGoals() {
@@ -116,7 +148,10 @@ class _RecordMatchResultPageState extends State<RecordMatchResultPage> {
       teamAScore: _scoreA,
       teamBScore: _scoreB,
       teamCScore: _scoreC,
-      manOfTheMatchName: _selectedMotmPlayerName ?? (_participantNames.isNotEmpty ? _participantNames.first : null),
+      manOfTheMatchName: _selectedMotmPlayerName ??
+          (widget.match.confirmedPlayers.isNotEmpty
+              ? widget.match.confirmedPlayers.first.playerName
+              : null),
       goals: _goals,
       notes: _notesController.text.trim().isNotEmpty ? _notesController.text.trim() : null,
       isLocked: true,
@@ -130,6 +165,7 @@ class _RecordMatchResultPageState extends State<RecordMatchResultPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = context.isDarkMode;
+    final participantNames = _buildParticipantNames(context);
 
     return KickoffResponsiveShell(
       child: Scaffold(
@@ -143,40 +179,61 @@ class _RecordMatchResultPageState extends State<RecordMatchResultPage> {
           ),
           children: [
             // Match Header Pill
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1B241E) : const Color(0xFFF0FDF4),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isDark ? const Color(0xFF2E3D34) : const Color(0xFFBBF7D0),
-                ),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.sports_soccer_rounded, color: Color(0xFF164E3D), size: 24),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.match.title,
-                          style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'نظام 3 فرق (الرقم يمثل عدد الأشواط/المباريات الفائزة لكل فريق)',
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-                          ),
-                        ),
-                      ],
+            Builder(
+              builder: (context) {
+                final cs = Theme.of(context).colorScheme;
+                final emerald = isDark
+                    ? AppColors.turfGreenNeon
+                    : AppColors.primaryEmerald;
+                return Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: emerald.withValues(alpha: isDark ? 0.12 : 0.07),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: emerald.withValues(alpha: isDark ? 0.30 : 0.22),
                     ),
                   ),
-                ],
-              ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: emerald.withValues(alpha: isDark ? 0.18 : 0.12),
+                          borderRadius: BorderRadius.circular(11),
+                        ),
+                        child: Icon(
+                          Icons.sports_soccer_rounded,
+                          color: emerald,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.match.title,
+                              style: context.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'نظام 3 فرق (الرقم يمثل عدد الأشواط/المباريات الفائزة لكل فريق)',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                color: cs.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 20),
 
@@ -190,8 +247,11 @@ class _RecordMatchResultPageState extends State<RecordMatchResultPage> {
               children: [
                 Expanded(
                   child: _buildTeamScoreCard(
+                    context,
                     name: 'الأخضر 🟢',
-                    color: AppColors.turfGreen,
+                    color: isDark
+                        ? AppColors.turfGreenNeon
+                        : AppColors.primaryEmerald,
                     score: _scoreA,
                     isLeader: _scoreA > _scoreB && _scoreA > _scoreC && _scoreA > 0,
                     onIncrement: () => setState(() => _scoreA++),
@@ -204,8 +264,9 @@ class _RecordMatchResultPageState extends State<RecordMatchResultPage> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: _buildTeamScoreCard(
+                    context,
                     name: 'الأبيض ⚪',
-                    color: isDark ? Colors.white70 : const Color(0xFF475569),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     score: _scoreB,
                     isLeader: _scoreB > _scoreA && _scoreB > _scoreC && _scoreB > 0,
                     onIncrement: () => setState(() => _scoreB++),
@@ -218,8 +279,9 @@ class _RecordMatchResultPageState extends State<RecordMatchResultPage> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: _buildTeamScoreCard(
+                    context,
                     name: 'الأسود ⚫',
-                    color: isDark ? const Color(0xFFCBD5E1) : Colors.black87,
+                    color: Theme.of(context).colorScheme.onSurface,
                     score: _scoreC,
                     isLeader: _scoreC > _scoreA && _scoreC > _scoreB && _scoreC > 0,
                     onIncrement: () => setState(() => _scoreC++),
@@ -243,7 +305,7 @@ class _RecordMatchResultPageState extends State<RecordMatchResultPage> {
               'مرتبط باستطلاع رأي الحجز تلقائياً، أو اختر اللاعب الأبرز من التشكيلة:',
               style: TextStyle(
                 fontSize: 11.5,
-                color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 10),
@@ -261,18 +323,26 @@ class _RecordMatchResultPageState extends State<RecordMatchResultPage> {
                     final sortedOptions = List.of(motmPoll.options)
                       ..sort((a, b) => b.voteCount.compareTo(a.voteCount));
                     final topOption = sortedOptions.first;
+                    final amber =
+                        isDark ? AppColors.amberNeon : AppColors.amberText;
 
                     return Container(
                       margin: const EdgeInsets.only(bottom: 12),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFEF3C7).withValues(alpha: isDark ? 0.15 : 0.8),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: Colors.amber.withValues(alpha: 0.5)),
+                        color: amber.withValues(alpha: isDark ? 0.14 : 0.10),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: amber.withValues(alpha: isDark ? 0.35 : 0.30),
+                        ),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.how_to_vote_rounded, color: Colors.amber, size: 22),
+                          Icon(
+                            Icons.how_to_vote_rounded,
+                            color: amber,
+                            size: 22,
+                          ),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Column(
@@ -297,9 +367,9 @@ class _RecordMatchResultPageState extends State<RecordMatchResultPage> {
                               context.showSuccessToast('تم اعتماد الفائز بالتصويت كرجل المباراة ⭐✓');
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.amber.shade700,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              backgroundColor: Theme.of(context).colorScheme.primary,
+                              foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                               elevation: 0,
                             ),
@@ -318,19 +388,24 @@ class _RecordMatchResultPageState extends State<RecordMatchResultPage> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E2822) : Colors.white,
-                borderRadius: BorderRadius.circular(14),
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isDark ? const Color(0xFF2E3D34) : const Color(0xFFE2E8E4),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .outlineVariant
+                      .withValues(alpha: 0.7),
                 ),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
-                  value: _selectedMotmPlayerName,
+                  value: participantNames.contains(_selectedMotmPlayerName)
+                      ? _selectedMotmPlayerName
+                      : null,
                   hint: const Text('اختر رجل المباراة من قائمة المشاركين...'),
                   isExpanded: true,
                   icon: const Icon(Icons.keyboard_arrow_down_rounded),
-                  items: _participantNames.map((name) {
+                  items: participantNames.map((name) {
                     return DropdownMenuItem<String>(
                       value: name,
                       child: Row(
@@ -358,7 +433,7 @@ class _RecordMatchResultPageState extends State<RecordMatchResultPage> {
               'سجل اللاعب وكم هدف أحرز، وصانع الهدف (حتى لو كان من الفريق الآخر):',
               style: TextStyle(
                 fontSize: 11.5,
-                color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 10),
@@ -375,16 +450,18 @@ class _RecordMatchResultPageState extends State<RecordMatchResultPage> {
                       Expanded(
                         flex: 3,
                         child: DropdownButtonFormField<String>(
-                          value: _selectedScorerName,
-                          decoration: InputDecoration(
+                          value: participantNames.contains(_selectedScorerName)
+                              ? _selectedScorerName
+                              : null,
+                          decoration: const InputDecoration(
                             labelText: 'الهداف ⚽ *',
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                            filled: true,
-                            fillColor: isDark ? const Color(0xFF1C2420) : const Color(0xFFF9FAFB),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
                           ),
                           hint: const Text('اختر الهداف...'),
-                          items: _participantNames.map((name) {
+                          items: participantNames.map((name) {
                             return DropdownMenuItem(value: name, child: Text(name, style: const TextStyle(fontSize: 13)));
                           }).toList(),
                           onChanged: (v) => setState(() => _selectedScorerName = v),
@@ -394,11 +471,16 @@ class _RecordMatchResultPageState extends State<RecordMatchResultPage> {
 
                       // Goals Count Counter
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
                         decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF222C26) : const Color(0xFFF1F5F2),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: isDark ? const Color(0xFF2E3D34) : const Color(0xFFE2E8E4)),
+                          color: Theme.of(context).colorScheme.surfaceContainer,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .outlineVariant
+                                .withValues(alpha: 0.7),
+                          ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -418,7 +500,13 @@ class _RecordMatchResultPageState extends State<RecordMatchResultPage> {
                             ),
                             InkWell(
                               onTap: () => setState(() => _newGoalCount++),
-                              child: const Icon(Icons.add_circle_outline_rounded, size: 20, color: AppColors.turfGreen),
+                              child: Icon(
+                                Icons.add_circle_outline_rounded,
+                                size: 20,
+                                color: isDark
+                                    ? AppColors.turfGreenNeon
+                                    : AppColors.primaryEmerald,
+                              ),
                             ),
                           ],
                         ),
@@ -429,21 +517,24 @@ class _RecordMatchResultPageState extends State<RecordMatchResultPage> {
 
                   // Assist Selector (Allows anyone including opponents)
                   DropdownButtonFormField<String>(
-                    value: _selectedAssistName,
-                    decoration: InputDecoration(
+                    value: (_selectedAssistName == _noAssistOption ||
+                            participantNames.contains(_selectedAssistName))
+                        ? _selectedAssistName
+                        : null,
+                    decoration: const InputDecoration(
                       labelText: 'صانع الهدف (الأسيست) 👟 (اختياري)',
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                      filled: true,
-                      fillColor: isDark ? const Color(0xFF1C2420) : const Color(0xFFF9FAFB),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
                     ),
                     hint: const Text('بدون صانع (مجهود فردي / ركلة جزاء)...'),
                     items: [
                       const DropdownMenuItem(
-                        value: 'بدون صانع (مجهود فردي / ركلة جزاء)',
-                        child: Text('بدون صانع (مجهود فردي / ركلة جزاء)', style: TextStyle(fontSize: 12)),
+                        value: _noAssistOption,
+                        child: Text(_noAssistOption, style: TextStyle(fontSize: 12)),
                       ),
-                      ..._participantNames.map((name) {
+                      ...participantNames.map((name) {
                         return DropdownMenuItem(
                           value: name,
                           child: Text('$name (صانع هدف)', style: const TextStyle(fontSize: 13)),
@@ -460,12 +551,12 @@ class _RecordMatchResultPageState extends State<RecordMatchResultPage> {
                       Expanded(
                         child: DropdownButtonFormField<String>(
                           value: _selectedGoalTeam,
-                          decoration: InputDecoration(
+                          decoration: const InputDecoration(
                             labelText: 'فريق الهداف',
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                            filled: true,
-                            fillColor: isDark ? const Color(0xFF1C2420) : const Color(0xFFF9FAFB),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
                           ),
                           items: [_teamAName, _teamBName, _teamCName].map((t) {
                             return DropdownMenuItem(value: t, child: Text(t, style: const TextStyle(fontSize: 12)));
@@ -479,10 +570,13 @@ class _RecordMatchResultPageState extends State<RecordMatchResultPage> {
                       ElevatedButton.icon(
                         onPressed: _addGoals,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF164E3D),
-                          foregroundColor: Colors.white,
+                          backgroundColor: isDark
+                              ? AppColors.turfGreenNeon
+                              : AppColors.primaryEmerald,
+                          foregroundColor:
+                              isDark ? AppColors.canvasDark : Colors.white,
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         ),
                         icon: const Icon(Icons.add_rounded, size: 18),
                         label: const Text('إضافة ⚽', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -501,12 +595,19 @@ class _RecordMatchResultPageState extends State<RecordMatchResultPage> {
                 runSpacing: 8,
                 children: _goals.map((g) {
                   final assistText = g.assistPlayerName != null ? ' (صناعة: ${g.assistPlayerName})' : '';
+                  final cs = Theme.of(context).colorScheme;
                   return Chip(
-                    backgroundColor: isDark ? const Color(0xFF1B241E) : const Color(0xFFF1F5F2),
-                    side: BorderSide(color: isDark ? const Color(0xFF2E3D34) : const Color(0xFFE2E8E4)),
+                    backgroundColor: cs.surfaceContainer,
+                    side: BorderSide(
+                      color: cs.outlineVariant.withValues(alpha: 0.7),
+                    ),
                     avatar: const Text('⚽', style: TextStyle(fontSize: 14)),
                     label: Text('${g.scorerName}$assistText', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                    deleteIcon: const Icon(Icons.close_rounded, size: 16, color: AppColors.redText),
+                    deleteIcon: Icon(
+                      Icons.close_rounded,
+                      size: 16,
+                      color: isDark ? AppColors.redNeon : AppColors.redText,
+                    ),
                     onDeleted: () {
                       setState(() => _goals.remove(g));
                     },
@@ -525,11 +626,8 @@ class _RecordMatchResultPageState extends State<RecordMatchResultPage> {
             TextFormField(
               controller: _notesController,
               maxLines: 2,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 hintText: 'أجواء اللقاء، قرارات تحكيمية، ملخص الأداء...',
-                filled: true,
-                fillColor: isDark ? const Color(0xFF1C2420) : const Color(0xFFF9FAFB),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
             const SizedBox(height: 32),
@@ -548,7 +646,8 @@ class _RecordMatchResultPageState extends State<RecordMatchResultPage> {
     );
   }
 
-  Widget _buildTeamScoreCard({
+  Widget _buildTeamScoreCard(
+    BuildContext context, {
     required String name,
     required Color color,
     required int score,
@@ -557,22 +656,28 @@ class _RecordMatchResultPageState extends State<RecordMatchResultPage> {
     required VoidCallback onDecrement,
     required bool isDark,
   }) {
+    final cs = Theme.of(context).colorScheme;
+    final emerald = isDark ? AppColors.turfGreenNeon : AppColors.primaryEmerald;
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1A231E) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: isLeader ? AppColors.turfGreen : (isDark ? const Color(0xFF2D3C33) : const Color(0xFFE2E8E4)),
+          color: isLeader
+              ? emerald
+              : cs.outlineVariant.withValues(alpha: 0.7),
           width: isLeader ? 2.0 : 1.0,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: isLeader ? AppColors.turfGreen.withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: isLeader
+            ? [
+                BoxShadow(
+                  color: emerald.withValues(alpha: 0.16),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ]
+            : null,
       ),
       child: Column(
         children: [
@@ -581,10 +686,17 @@ class _RecordMatchResultPageState extends State<RecordMatchResultPage> {
               margin: const EdgeInsets.only(bottom: 6),
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: AppColors.turfGreen.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(6),
+                color: emerald.withValues(alpha: isDark ? 0.16 : 0.10),
+                borderRadius: BorderRadius.circular(8),
               ),
-              child: const Text('بطل اليوم 🏆', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: AppColors.turfGreen)),
+              child: Text(
+                'بطل اليوم 🏆',
+                style: TextStyle(
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.bold,
+                  color: emerald,
+                ),
+              ),
             ),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -606,7 +718,10 @@ class _RecordMatchResultPageState extends State<RecordMatchResultPage> {
             '$score',
             style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900),
           ),
-          const Text('فوز', style: TextStyle(fontSize: 10, color: Colors.grey)),
+          Text(
+            'فوز',
+            style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant),
+          ),
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -622,9 +737,13 @@ class _RecordMatchResultPageState extends State<RecordMatchResultPage> {
               InkWell(
                 onTap: onIncrement,
                 borderRadius: BorderRadius.circular(8),
-                child: const Padding(
-                  padding: EdgeInsets.all(4),
-                  child: Icon(Icons.add_circle_outline_rounded, size: 20, color: AppColors.turfGreen),
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Icon(
+                    Icons.add_circle_outline_rounded,
+                    size: 20,
+                    color: emerald,
+                  ),
                 ),
               ),
             ],

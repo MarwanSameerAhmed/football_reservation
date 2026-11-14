@@ -131,5 +131,28 @@ void main() {
 
       authBloc.add(const AuthSignOutRequested());
     });
+
+    test('Regular player cannot self-elevate to admin via ToggleUserRoleRequested', () async {
+      authBloc.add(
+        const AuthSignInRequested(
+          email: 'player@kickoff.com',
+          password: 'password123',
+        ),
+      );
+      await expectLater(
+        authBloc.stream,
+        emitsThrough(isA<Authenticated>()),
+      );
+
+      final before = authBloc.state as Authenticated;
+      expect(before.isAdmin, isFalse);
+      expect(before.canSwitchRolePreview, isFalse);
+
+      authBloc.add(const ToggleUserRoleRequested());
+      await Future<void>.delayed(Duration.zero);
+
+      final after = authBloc.state as Authenticated;
+      expect(after.isAdmin, isFalse);
+    });
   });
 }

@@ -79,6 +79,7 @@ class _KickoffActionButtonState extends State<KickoffActionButton>
   }
 
   void _completeSlide(double maxDrag) {
+    if (_confirmed) return;
     _confirmed = true;
     _slideAnimation = Tween<double>(begin: _dragPosition, end: maxDrag).animate(
       CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic),
@@ -88,8 +89,8 @@ class _KickoffActionButtonState extends State<KickoffActionButton>
       if (widget.onPressed != null && mounted) {
         widget.onPressed!();
       }
-      Future.delayed(const Duration(milliseconds: 600), () {
-        if (mounted && !_confirmed) {
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted && !widget.isLoading) {
           _resetPosition();
         }
       });
@@ -100,12 +101,10 @@ class _KickoffActionButtonState extends State<KickoffActionButton>
   Widget build(BuildContext context) {
     final isDark = context.isDarkMode;
     final cs = context.colorScheme;
-    final defaultBg = isDark ? cs.surfaceContainerHigh : AppColors.darkSlate;
+    final defaultBg = isDark ? AppColors.darkSurfaceMuted : AppColors.ink;
     final effectiveBg = widget.backgroundColor ?? defaultBg;
 
-    final defaultCircle = isDark
-        ? AppColors.turfGreenNeon
-        : AppColors.primaryEmerald;
+    final defaultCircle = cs.primary;
     final effectiveCircle = widget.circleColor ?? defaultCircle;
 
     final double effectiveHeight =
@@ -130,31 +129,30 @@ class _KickoffActionButtonState extends State<KickoffActionButton>
               ? (_dragPosition / maxDrag).clamp(0.0, 1.0)
               : 0.0;
 
-          return Container(
-            height: effectiveHeight,
-            width: totalWidth,
-            decoration: BoxDecoration(
-              color: widget.onPressed == null
-                  ? effectiveBg.withValues(alpha: 0.5)
-                  : effectiveBg,
-              borderRadius: BorderRadius.circular(effectiveHeight / 2),
-              border: Border.all(
-                color: isDark ? cs.outlineVariant : const Color(0xFF23372E),
-                width: 1.0,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: (isDark ? Colors.black : AppColors.darkSlate)
-                      .withValues(alpha: isDark ? 0.35 : 0.16),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
+          return Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: (widget.onPressed == null || widget.isLoading || _isDragging)
+                  ? null
+                  : () => _completeSlide(maxDrag),
+              child: Container(
+                height: effectiveHeight,
+                width: totalWidth,
+                decoration: BoxDecoration(
+                  color: widget.onPressed == null
+                      ? effectiveBg.withValues(alpha: 0.5)
+                      : effectiveBg,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isDark ? cs.outlineVariant : AppColors.ink,
+                    width: 1.0,
+                  ),
                 ),
-              ],
-            ),
-            child: Stack(
-              alignment: Alignment.centerLeft,
-              children: [
-                // Animated green fill behind thumb as it slides
+                child: Stack(
+                  alignment: Alignment.centerLeft,
+                  children: [
+                // Animated fill behind thumb as it slides
                 Positioned(
                   left: 0,
                   top: 0,
@@ -163,9 +161,9 @@ class _KickoffActionButtonState extends State<KickoffActionButton>
                   child: Container(
                     decoration: BoxDecoration(
                       color: effectiveCircle.withValues(
-                        alpha: 0.18 + (progress * 0.25),
+                        alpha: 0.16 + (progress * 0.22),
                       ),
-                      borderRadius: BorderRadius.circular(effectiveHeight / 2),
+                      borderRadius: BorderRadius.circular(16),
                     ),
                   ),
                 ),
@@ -235,24 +233,17 @@ class _KickoffActionButtonState extends State<KickoffActionButton>
                       height: thumbSize,
                       decoration: BoxDecoration(
                         color: effectiveCircle,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: effectiveCircle.withValues(alpha: 0.5),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: Center(
                         child: widget.isLoading
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 20,
                                 height: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2.2,
                                   valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.black,
+                                    cs.onPrimary,
                                   ),
                                 ),
                               )
@@ -261,10 +252,10 @@ class _KickoffActionButtonState extends State<KickoffActionButton>
                                     (progress > 0.85
                                         ? Icons.check_rounded
                                         : (context.isRtl
-                                              ? Icons.chevron_right_rounded
+                                              ? Icons.chevron_left_rounded
                                               : Icons.chevron_right_rounded)),
-                                color: Colors.black,
-                                size: 26,
+                                color: cs.onPrimary,
+                                size: 24,
                               ),
                       ),
                     ),
@@ -272,8 +263,10 @@ class _KickoffActionButtonState extends State<KickoffActionButton>
                 ),
               ],
             ),
-          );
-        },
+          ),
+        ),
+      );
+    },
       ),
     );
   }

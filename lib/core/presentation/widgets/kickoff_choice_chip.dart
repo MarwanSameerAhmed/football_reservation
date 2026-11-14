@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../app/theme/app_colors.dart';
 import '../../extensions/context_extensions.dart';
 import '../../motion/kickoff_motion.dart';
 
@@ -28,17 +27,15 @@ class KickoffChoiceChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = context.isDarkMode;
     final cs = context.colorScheme;
-    final accent = isDark ? AppColors.turfGreenNeon : AppColors.primaryEmerald;
 
-    final selectedBg = accent.withValues(alpha: isDark ? 0.16 : 0.11);
-    final unselectedBg = cs.surface;
+    // `tam_app` crisp chip style: soft primary tint + primary border & label.
+    final selectedBg = cs.primary.withValues(alpha: isDark ? 0.18 : 0.10);
+    final unselectedBg = cs.surfaceContainer;
 
-    final selectedBorder = accent;
+    final selectedBorder = cs.primary;
     final unselectedBorder = cs.outlineVariant;
 
-    final selectedTextColor = isDark
-        ? AppColors.turfGreenNeon
-        : AppColors.turfGreenDark;
+    final selectedTextColor = cs.primary;
     final unselectedTextColor = cs.onSurface;
 
     return Semantics(

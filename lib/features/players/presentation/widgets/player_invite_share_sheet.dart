@@ -143,17 +143,19 @@ class PlayerInviteShareSheet extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isDark ? AppColors.surfaceDark : Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color: isDark
-                    ? const Color(0xFF2E3D34)
-                    : const Color(0xFFCBD5E1),
+                color: Theme.of(context)
+                    .colorScheme
+                    .outlineVariant
+                    .withValues(alpha: 0.7),
               ),
             ),
             child: Column(
               children: [
                 _buildInfoRow(
+                  context,
                   label: 'الاسم المعتمد',
                   value: player.name,
                   icon: Icons.person_rounded,
@@ -161,13 +163,16 @@ class PlayerInviteShareSheet extends StatelessWidget {
                 ),
                 const Divider(height: 18),
                 _buildInfoRow(
+                  context,
                   label: 'رقم الجوال',
                   value: phone.isNotEmpty ? phone : 'غير مسجل',
                   icon: Icons.phone_android_rounded,
                   isDark: isDark,
+                  forceLtrValue: phone.isNotEmpty,
                 ),
                 const Divider(height: 18),
                 _buildInfoRow(
+                  context,
                   label: 'رمز التفعيل السريع',
                   value: _inviteCode,
                   icon: Icons.vpn_key_rounded,
@@ -182,41 +187,40 @@ class PlayerInviteShareSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow({
+  Widget _buildInfoRow(
+    BuildContext context, {
     required String label,
     required String value,
     required IconData icon,
     required bool isDark,
     bool isHighlighted = false,
+    bool forceLtrValue = false,
   }) {
+    final cs = Theme.of(context).colorScheme;
+    final emerald = isDark ? AppColors.turfGreenNeon : AppColors.primaryEmerald;
     return Row(
       children: [
         Icon(
           icon,
           size: 18,
-          color: isHighlighted
-              ? const Color(0xFF164E3D)
-              : (isDark ? AppColors.textSecondaryDark : const Color(0xFF6B7280)),
+          color: isHighlighted ? emerald : cs.onSurfaceVariant,
         ),
         const SizedBox(width: 8),
         Text(
           label,
           style: TextStyle(
             fontSize: 12.5,
-            color: isDark
-                ? AppColors.textSecondaryDark
-                : const Color(0xFF6B7280),
+            color: cs.onSurfaceVariant,
           ),
         ),
         const Spacer(),
         Text(
           value,
+          textDirection: forceLtrValue ? TextDirection.ltr : null,
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.bold,
-            color: isHighlighted
-                ? (isDark ? const Color(0xFF86EFAC) : const Color(0xFF164E3D))
-                : (isDark ? Colors.white : const Color(0xFF1F2937)),
+            color: isHighlighted ? emerald : cs.onSurface,
           ),
         ),
       ],

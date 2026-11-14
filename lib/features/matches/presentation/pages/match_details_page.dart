@@ -114,23 +114,20 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
                     vertical: 12.0,
                   ),
                   children: [
-                    // Hero Stadium Visual (Executive Formtor Obsidian & Emerald)
+                    // Hero Stadium Visual (clean white surface)
                     Stack(
                       children: [
                         ClipRRect(
-                          borderRadius: BorderRadius.circular(24),
+                          borderRadius: BorderRadius.circular(20),
                           child: AspectRatio(
                             aspectRatio: 16 / 10,
                             child: Container(
-                              decoration: const BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    Color(0xFF111815),
-                                    Color(0xFF172720),
-                                    Color(0xFF0E1713),
-                                  ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
+                              decoration: BoxDecoration(
+                                color: context.colorScheme.surface,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: context.colorScheme.outlineVariant,
+                                  width: 1.0,
                                 ),
                               ),
                               child: Center(
@@ -140,14 +137,14 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
                                     Icon(
                                       Icons.stadium_rounded,
                                       size: 62,
-                                      color: AppColors.turfGreenNeon
-                                          .withValues(alpha: 0.45),
+                                      color: context.colorScheme.primary
+                                          .withValues(alpha: 0.85),
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
                                       match.pitchName,
-                                      style: const TextStyle(
-                                        color: Colors.white,
+                                      style: TextStyle(
+                                        color: context.colorScheme.onSurface,
                                         fontWeight: FontWeight.w800,
                                         fontSize: 16,
                                       ),
@@ -171,26 +168,29 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
                               vertical: 5,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.9),
+                              color: context.colorScheme.surfaceContainer,
                               borderRadius: BorderRadius.circular(
                                 AppConstants.radiusCircular,
                               ),
+                              border: Border.all(
+                                color: context.colorScheme.outlineVariant,
+                              ),
                             ),
-                            child: const Row(
+                            child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
                                   Icons.near_me_rounded,
                                   size: 13,
-                                  color: AppColors.darkSlate,
+                                  color: context.colorScheme.primary,
                                 ),
-                                SizedBox(width: 4),
+                                const SizedBox(width: 4),
                                 Text(
                                   '0.8 km',
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
-                                    color: AppColors.darkSlate,
+                                    color: context.colorScheme.onSurface,
                                   ),
                                 ),
                               ],
@@ -365,7 +365,7 @@ class _MatchDetailsPageState extends State<MatchDetailsPage> {
                               ),
                             ),
                             Icon(
-                              Icons.chevron_right_rounded,
+                              Icons.chevron_left_rounded,
                               size: 18,
                               color: context.colorScheme.outline,
                             ),
