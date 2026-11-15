@@ -231,9 +231,7 @@ class _SignInPageState extends State<SignInPage> {
 
                         // App Title & Tagline
                         Text(
-                          context.l10n.isArabic
-                              ? 'تسجيل الدخول'
-                              : 'Sign In',
+                          context.l10n.isArabic ? 'تسجيل الدخول' : 'Sign In',
                           textAlign: TextAlign.center,
                           style: context.textTheme.displayMedium?.copyWith(
                             fontSize: context.responsive(
@@ -247,7 +245,7 @@ class _SignInPageState extends State<SignInPage> {
                         const SizedBox(height: 6),
                         Text(
                           context.l10n.isArabic
-                              ? 'إدارة وتنظيم مباريات كرة القدم الأسبوعية بذكاء'
+                              ? 'إدارة وتنظيم مباريات كرة القدم الأسبوعية'
                               : 'Intelligent football group & match management',
                           textAlign: TextAlign.center,
                           style: context.textTheme.bodyMedium?.copyWith(
