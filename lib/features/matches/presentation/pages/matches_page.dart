@@ -101,6 +101,17 @@ class _MatchesPageState extends State<MatchesPage> {
                     );
                   }
 
+                  if (state is MatchesEmptyState) {
+                    return _buildEmptyMatchesState(
+                      context: context,
+                      isAdmin: isAdmin,
+                      title: state.message,
+                      message: _selectedFilterIndex == 1
+                          ? 'لا توجد نتائج سابقة مسجلة.'
+                          : 'لم يتم فتح حجز أي مباراة جديدة بعد.',
+                    );
+                  }
+
                   if (state is MatchesLoaded) {
                     final allMatches = state.matches;
                     final filteredMatches = allMatches.where((m) {
@@ -114,21 +125,13 @@ class _MatchesPageState extends State<MatchesPage> {
                     }).toList();
 
                     if (filteredMatches.isEmpty) {
-                      return AppEmptyStateWidget(
+                      return _buildEmptyMatchesState(
+                        context: context,
+                        isAdmin: isAdmin,
                         title: 'لا توجد مباريات في هذه الفئة',
                         message: _selectedFilterIndex == 0
                             ? 'لم يتم فتح حجز أي مباراة جديدة بعد.'
                             : 'لا توجد نتائج سابقة مسجلة.',
-                        actionLabel: isAdmin ? 'إنشاء مباراة الآن' : 'تحديث',
-                        onAction: () {
-                          if (isAdmin) {
-                            CreateMatchDialog.show(context);
-                          } else {
-                            context.read<MatchesBloc>().add(
-                              const LoadMatchesRequested(),
-                            );
-                          }
-                        },
                       );
                     }
 
@@ -165,6 +168,26 @@ class _MatchesPageState extends State<MatchesPage> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildEmptyMatchesState({
+    required BuildContext context,
+    required bool isAdmin,
+    required String title,
+    required String message,
+  }) {
+    return AppEmptyStateWidget(
+      title: title,
+      message: message,
+      actionLabel: isAdmin ? 'إنشاء مباراة الآن' : 'تحديث',
+      onAction: () {
+        if (isAdmin) {
+          CreateMatchDialog.show(context);
+        } else {
+          context.read<MatchesBloc>().add(const LoadMatchesRequested());
+        }
+      },
     );
   }
 
